@@ -31,7 +31,9 @@ const ENCABEZADOS = {
 };
 
 const AJUSTES_INICIALES = [
-  ['saldoInicialUSD', 0, 'Dólares que ya tenías ahorrados antes de empezar a usar la app']
+  ['saldoInicialUSD', 0, 'Dólares que ya tenías ahorrados antes de empezar a usar la app'],
+  ['saldoInicialARS', 0, 'Pesos que tenías disponibles en la fecha de abajo'],
+  ['fechaInicialARS', '', 'Desde esta fecha se suman ingresos y se restan gastos en pesos (aaaa-mm-dd)']
 ];
 
 // Podés editar todo esto después directamente en la planilla.
@@ -53,7 +55,7 @@ const CATEGORIAS_INICIALES = [
   ['Otros', 'gasto', '📦', '#A39E93', ''],
   ['Sueldo', 'ingreso', '💼', '#2F5D50', 'sueldo, salario, aguinaldo, tip travel, recibo'],
   ['Freelance', 'ingreso', '💻', '#1F3A5F', 'freelance, cliente, clienta, factura, social media, community, villa tamen, proyecto'],
-  ['Otros ingresos', 'ingreso', '💰', '#B8862F', 'venta, vendi, reintegro, devolucion, prestamo, rendimiento, plazo fijo']
+  ['Otros ingresos', 'ingreso', '💰', '#B8862F', 'venta, vendi, reintegro, devolucion, devolvieron, reintegraron, prestamo, rendimiento, plazo fijo']
 ];
 
 // Se revisan en orden: Débito va antes que Crédito para que "visa débito" sea débito.
@@ -90,7 +92,8 @@ function configurar() {
     hMed.insertRowBefore(2);
     hMed.getRange(2, 1, 1, 2).setValues([MEDIOS_INICIALES[0]]).setFontWeight('normal').setBackground(null).setFontColor(null);
   }
-  asegurarHoja_(ss, HOJAS.AJU, ENCABEZADOS.AJU, AJUSTES_INICIALES);
+  const hAju = asegurarHoja_(ss, HOJAS.AJU, ENCABEZADOS.AJU, AJUSTES_INICIALES);
+  hAju.getRange('B:B').setNumberFormat('@');
   hMov.getRange('N:N').setNumberFormat('#,##0.00');
 
   ['Hoja 1', 'Hoja1', 'Sheet1'].forEach(function (n) {
@@ -191,7 +194,7 @@ function ejecutar_(b) {
     case 'guardarAjustes': guardarAjustes_(b.ajustes || {}); return conDatos({ mensaje: 'Ajustes guardados' });
     case 'texto': {
       const desdeSiri = b.responder === 'texto';
-      const r = procesarTexto_(b.texto, desdeSiri ? 'siri' : 'app');
+      const r = procesarTexto_(b.texto, desdeSiri ? 'siri' : 'app', b.tipo);
       return desdeSiri ? r : Object.assign(r, { datos: datos_() });
     }
     default: throw new Error('Acción desconocida: ' + b.accion);
@@ -227,24 +230,44 @@ function datos_() {
 
 function leerAjustes_() {
   const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJAS.AJU);
-  const res = { saldoInicialUSD: 0 };
+  const res = { saldoInicialUSD: 0, saldoInicialARS: 0, fechaInicialARS: '' };
   if (!h || h.getLastRow() < 2) return res;
   h.getRange(2, 1, h.getLastRow() - 1, 2).getValues().forEach(function (r) {
-    if (r[0] === 'saldoInicialUSD') res.saldoInicialUSD = Number(r[1]) || 0;
+    if (r[0] === 'saldoInicialUSD' || r[0] === 'saldoInicialARS') res[r[0]] = Number(String(r[1]).replace(',', '.')) || 0;
+    if (r[0] === 'fechaInicialARS') res.fechaInicialARS = r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'yyyy-MM-dd') : String(r[1]).trim();
   });
   return res;
 }
 
 function guardarAjustes_(a) {
   const h = hoja_('AJU');
-  if (a.saldoInicialUSD !== undefined) {
+  const poner = function (clave, valor) {
     const n = h.getLastRow();
     const claves = n > 1 ? h.getRange(2, 1, n - 1, 1).getValues().map(function (r) { return r[0]; }) : [];
-    const i = claves.indexOf('saldoInicialUSD');
-    const v = Math.abs(Number(a.saldoInicialUSD)) || 0;
-    if (i >= 0) h.getRange(i + 2, 2).setValue(v);
-    else h.appendRow(['saldoInicialUSD', v, AJUSTES_INICIALES[0][2]]);
+    const i = claves.indexOf(clave);
+    const nota = (AJUSTES_INICIALES.filter(function (x) { return x[0] === clave; })[0] || [])[2] || '';
+    if (i >= 0) h.getRange(i + 2, 2).setNumberFormat('@').setValue(String(valor));
+    else { h.appendRow([clave, String(valor), nota]); h.getRange(h.getLastRow(), 2).setNumberFormat('@'); }
+  };
+  if (a.saldoInicialUSD !== undefined) poner('saldoInicialUSD', Math.abs(Number(a.saldoInicialUSD)) || 0);
+  if (a.saldoInicialARS !== undefined) {
+    poner('saldoInicialARS', Number(a.saldoInicialARS) || 0);
+    const f = /^\d{4}-\d{2}-\d{2}$/.test(String(a.fechaInicialARS || '')) ? a.fechaInicialARS : hoy_();
+    poner('fechaInicialARS', f);
   }
+}
+
+/** Plata disponible en pesos: saldo inicial + ingresos y ventas de USD − gastos y compras de USD (desde la fecha inicial). */
+function saldoARS_(movs, ajustes) {
+  ajustes = ajustes || leerAjustes_();
+  if (!ajustes.fechaInicialARS) return null;
+  return movs.reduce(function (a, m) {
+    if (m.fecha < ajustes.fechaInicialARS) return a;
+    if (m.tipo === 'ahorro') return a - (m.pesos || 0);
+    if (m.tipo === 'retiro') return a + (m.pesos || 0);
+    if (m.moneda === 'USD') return a;
+    return a + (m.tipo === 'ingreso' ? m.monto : -m.monto);
+  }, ajustes.saldoInicialARS);
 }
 
 /** Saldo de la cuenta en dólares: ahorro inicial + ingresos y compras − gastos y ventas. */
@@ -443,6 +466,7 @@ function guardarFijo_(f) {
   const n = f.id ? filaPorId_(h, f.id) : -1;
   if (n > 0) h.getRange(n, 1, 1, fila.length).setValues([fila]);
   else h.appendRow(fila);
+  return fila[0];
 }
 
 function borrarFijo_(id) {
@@ -473,12 +497,24 @@ function procesarDebitosAutomaticos() {
  *  SIRI: entender frases como "gasté 8500 en el súper con débito"
  * ============================================================ */
 
-function procesarTexto_(texto, origen) {
-  const ctx = { categorias: leer_('CAT'), medios: leer_('MED'), fijos: leer_('FIJ'), hoy: hoy_() };
+/** tipoForzado: 'ingreso' cuando viene del atajo "Anotar ingreso" (si no, se adivina por la frase). */
+function procesarTexto_(texto, origen, tipoForzado) {
+  const ctx = { categorias: leer_('CAT'), medios: leer_('MED'), fijos: leer_('FIJ'), hoy: hoy_(), tipoForzado: tipoForzado === 'ingreso' ? 'ingreso' : '' };
   const r = interpretar_(texto, ctx);
 
   if (r.error) return { ok: false, error: r.error, mensaje: r.error };
   if (r.consulta) return { ok: true, mensaje: resumenParaSiri_(ctx) };
+
+  // "…fijo" sin un fijo con ese nombre: lo creo y lo marco pagado
+  if (r.fijoNuevo) {
+    const id = guardarFijo_({
+      nombre: r.descripcion, monto: r.monto, dia: Number(r.fecha.slice(8, 10)), categoria: r.categoria,
+      medio: r.medio, moneda: r.moneda, debitoAutomatico: false, activo: true, notas: 'Creado desde Siri'
+    });
+    const pn = pagarFijo_(id, r.fecha.slice(0, 7), r.monto, r.fecha, origen);
+    return { ok: true, mensaje: 'Listo. No tenías un gasto fijo llamado ' + r.descripcion + ', así que lo agregué a tus fijos con vencimiento el día ' +
+      Number(r.fecha.slice(8, 10)) + ' y lo marqué como pagado: ' + fmtMonto_(pn.mov.monto, pn.mov.moneda) + '.' };
+  }
 
   if (r.fijo) {
     const p = pagarFijo_(r.fijo.id, r.fecha.slice(0, 7), r.monto || r.fijo.monto, r.fecha, origen,
@@ -492,6 +528,11 @@ function procesarTexto_(texto, origen) {
     categoria: r.categoria, medio: r.medio, cuotas: r.cuotas, pesos: r.pesos
   }, origen);
   let mensaje = mensajeAnotado_(mov, ctx.hoy);
+  if (r.fijoParecido) {
+    const mes = r.fecha.slice(0, 7);
+    const pagado = leer_('MOV').some(function (m) { return m.idFijo === r.fijoParecido.id && m.mes === mes; });
+    if (!pagado) mensaje += ' Lo anoté como gasto variable. Si era tu fijo ' + r.fijoParecido.nombre + ', borralo en la app y decilo de nuevo agregando la palabra fijo.';
+  }
   if (mov.moneda === 'USD') mensaje += ' Tu cuenta en dólares tiene ' + fmtMonto_(saldoUSD_(leer_('MOV')), 'USD') + '.';
   return { ok: true, mensaje: mensaje, movimiento: mov };
 }
@@ -524,6 +565,8 @@ function resumenParaSiri_(ctx) {
     return f.activo && !movs.some(function (m) { return m.idFijo === f.id; });
   });
   let s = 'En lo que va del mes gastaste ' + fmtMonto_(suma('gasto'), 'ARS') + ' e ingresaste ' + fmtMonto_(suma('ingreso'), 'ARS') + '. ';
+  const disponible = saldoARS_(leer_('MOV'));
+  if (disponible !== null) s += 'Tenés disponibles ' + (disponible < 0 ? 'menos ' : '') + fmtMonto_(disponible, 'ARS') + ' en pesos. ';
   s += 'En dólares: ' + (ahorroUSD ? 'este mes ahorraste ' + fmtMonto_(ahorroUSD, 'USD') + ', ' : '') +
     (gastoUSD ? 'gastaste ' + fmtMonto_(gastoUSD, 'USD') + ', ' : '') + 'y tu cuenta tiene ' + fmtMonto_(saldo, 'USD') + '. ';
   if (!ctx.fijos.some(function (f) { return f.activo; })) return s;
@@ -562,18 +605,18 @@ function interpretar_(texto, ctx) {
   };
 
   // ¿Es una pregunta?
-  if (/\bcuanto (llevo|gaste|gastamos|gasto|va|vamos|tengo|ahorre|ahorrado)\b|\bcuantos dolares\b|\bcomo vengo\b|\bresumen\b/.test(t)) return { consulta: true };
+  if (/\bcuanto (llevo|gaste|gastamos|gasto|va|vamos|tengo|ahorre|ahorrado|me queda|queda)\b|\bcuantos (dolares|pesos)\b|\bcuanta plata\b|\bcomo vengo\b|\bresumen\b/.test(t)) return { consulta: true };
 
   // ¿Compra o venta de dólares? ("compré 200 dólares a 1.250.000", "ahorré 300 dólares", "vendí 100 dólares a 1400")
   const DOL = '(?:dolares|dolar|usd|verdes|u\\$s|us\\$)';
-  const NUM = '(?:u\\$s\\s*|us\\$\\s*|usd\\s*)?(?:[\\d.,]+\\s*|(?:un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta|cuarenta|cincuenta|cien)\\s+)?(?:mil\\s+|k\\s+)?';
+  const NUM = '(?:u\\$s\\s*|us\\$\\s*|usd\\s*)?(?:(?:[\\d.,]+|' + Object.keys(VALOR_PALABRA).join('|') + '|mil|millon|millones|y|k)\\s*)*';
   const esAhorro = /\b(ahorre|ahorramos|guarde|ahorro de)\b/.test(t) ||
     new RegExp('\\b(compre|compramos|compra de|cambie|pase a)\\s+(?:unos\\s+|los\\s+)?(?:' + NUM + ')?' + DOL).test(t);
   const esRetiro = new RegExp('\\b(vendi|vendimos|venta de)\\s+(?:unos\\s+|los\\s+)?(?:' + NUM + ')?' + DOL).test(t);
-  if (esAhorro || esRetiro) return interpretarCambio_(original, t, esRetiro ? 'retiro' : 'ahorro', ctx);
+  if ((esAhorro || esRetiro) && ctx.tipoForzado !== 'ingreso') return interpretarCambio_(original, t, esRetiro ? 'retiro' : 'ahorro', ctx);
 
   // Tipo
-  const tipo = /\b(cobre|cobramos|cobro|me pagaron|me depositaron|me transfirieron|me entro|me entraron|ingrese|ingreso|ingresaron|recibi|vendi|sueldo|aguinaldo)\b/.test(t) ? 'ingreso' : 'gasto';
+  const tipo = ctx.tipoForzado === 'ingreso' ? 'ingreso' : /\b(cobre|cobramos|cobro|me pagaron|me depositaron|me transfirieron|me entro|me entraron|ingrese|ingreso|ingresaron|recibi|vendi|sueldo|aguinaldo)\b/.test(t) ? 'ingreso' : 'gasto';
 
   // Fecha
   let fecha = ctx.hoy;
@@ -604,35 +647,36 @@ function interpretar_(texto, ctx) {
   if (mC) cuotas = /^\d+$/.test(mC[1]) ? Number(mC[1]) : NUM_PALABRAS[mC[1]];
   quitarTodos(/\bsin interes(es)?\b/);
 
-  // Monto
+  // Monto (entiende "1.519.050", "1 millón 519.050", "un millón quinientos mil", "5 lucas", "2,5 millones"…)
   let monto = 0;
-  const mN = /(\d{1,3}(?:\.\d{3})+|\d+)(?:[.,](\d{1,2}))?(?!\d)\s*(mil\b|lucas?\b|k\b)?/.exec(trabajo);
-  if (mN) {
-    monto = parseFloat(mN[1].replace(/\./g, '') + (mN[2] ? '.' + mN[2] : ''));
-    if (mN[3]) monto *= 1000;
-    marcar(mN.index, mN.index + mN[0].length);
-  } else {
-    const mP = quitarPrimero(/\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta|cuarenta|cincuenta|cien)\s+(mil|lucas?)\b/);
-    if (mP) monto = NUM_PALABRAS[mP[1]] * 1000;
-    else if (quitarPrimero(/\bmil\b/)) monto = 1000;
+  const montos = buscarMontos_(trabajo);
+  if (montos.length) {
+    const mayor = montos.reduce(function (x, y) { return y.v > x.v ? y : x; });
+    monto = mayor.v;
+    marcar(mayor.i, mayor.f);
   }
   quitarTodos(/\$/);
 
   // Verbos y muletillas
-  quitarTodos(/\b(un gasto de|gasto de|un ingreso de|ingreso de|gaste|gastamos|gastado|pague|pagamos|abone|compre|compramos|cobre|cobramos|me pagaron|me depositaron|me transfirieron|me entraron|me entro|recibi|ingrese|anotame|anota que|anota|anotar|registra|registrame|siri)\b/);
+  quitarTodos(/\b(un gasto de|gasto de|un ingreso de|ingreso de|gaste|gastamos|gastado|pague|pagamos|abone|compre|compramos|cobre|cobramos|me pagaron|me depositaron|me transfirieron|me devolvieron|me reintegraron|me entraron|me entro|recibi|ingrese|anotame|anota que|anota|anotar|registra|registrame|siri)\b/);
 
-  // ¿Es un gasto fijo? ("pagué la luz", "pagué el alquiler")
-  let fijo = null;
+  // ¿Es un gasto fijo? Solo si lo decís: "pagué la luz, gasto fijo", "alquiler fijo 450 mil"
+  const dijoFijo = tipo === 'gasto' && !!quitarPrimero(/(?:\b(?:como|es|un|el|la|de|del|gasto|pago|mis|mi|los|las)\s+)*\bfij[oa]s?\b/);
+  quitarTodos(/\b(gasto|pago)\b(?=\s*$)/);
+  let fijo = null, fijoParecido = null;
   if (tipo === 'gasto') {
     const fijos = (ctx.fijos || []).filter(function (f) { return f.activo && f.nombre; })
       .sort(function (a, b) { return b.nombre.length - a.nombre.length; });
     for (let i = 0; i < fijos.length; i++) {
-      if (new RegExp('\\b' + escRe_(norm_(fijos[i].nombre)) + '\\b').test(trabajo)) { fijo = fijos[i]; break; }
+      if (new RegExp('\\b' + escRe_(norm_(fijos[i].nombre)) + 's?\\b').test(trabajo)) { fijoParecido = fijos[i]; break; }
     }
+    if (dijoFijo) fijo = fijoParecido;
   }
 
   if (!monto && !(fijo && fijo.monto)) {
-    return { error: 'No entendí el monto. Probá diciendo, por ejemplo: gasté 8500 en el súper con débito.' };
+    return { error: dijoFijo && !fijo
+      ? 'Para agregar un gasto fijo nuevo necesito el monto. Probá: pagué el gimnasio 35 mil, gasto fijo.'
+      : 'No entendí el monto. Probá diciendo, por ejemplo: gasté 8500 en el súper con débito.' };
   }
 
   // Categoría
@@ -661,7 +705,19 @@ function interpretar_(texto, ctx) {
   desc = desc.charAt(0).toUpperCase() + desc.slice(1);
 
   if (moneda === 'USD' && medio === 'Sin especificar') medio = 'Cuenta en dólares';
-  return { tipo: tipo, monto: monto, moneda: moneda, fecha: fecha, cuotas: cuotas, medio: medio, categoria: categoria, descripcion: desc, fijo: fijo };
+  // Dijo "fijo" pero no coincide el nombre exacto: busco uno parecido por la descripción
+  if (dijoFijo && !fijo) {
+    const d = norm_(desc);
+    fijo = (ctx.fijos || []).filter(function (f) {
+      const n = norm_(f.nombre);
+      return f.activo && n && d && (d.indexOf(n) >= 0 || n.indexOf(d) >= 0);
+    })[0] || null;
+  }
+  if (fijo) moneda = fijo.moneda === 'USD' ? 'USD' : 'ARS';
+  return {
+    tipo: tipo, monto: monto, moneda: moneda, fecha: fecha, cuotas: cuotas, medio: medio, categoria: categoria, descripcion: desc,
+    fijo: fijo, fijoNuevo: dijoFijo && !fijo, fijoParecido: !dijoFijo ? fijoParecido : null
+  };
 }
 
 /** Compra (ahorro) o venta (retiro) de dólares. Devuelve monto = dólares y pesos = pesos. */
@@ -670,27 +726,17 @@ function interpretarCambio_(original, t, tipo, ctx) {
   if (/\b(antes de ayer|anteayer)\b/.test(t)) fecha = sumarDias_(ctx.hoy, -2);
   else if (/\bayer\b/.test(t)) fecha = sumarDias_(ctx.hoy, -1);
 
-  // Todos los números de la frase, marcando cuál viene pegado a "dólares" y cuál a "pesos"
-  const re = /(u\$s\s*|us\$\s*|usd\s*|\$\s*)?(\d{1,3}(?:\.\d{3})+|\d+)(?:[.,](\d{1,2}))?(?!\d)\s*(mil\b|lucas?\b|k\b)?/g;
-  const nums = [];
-  let m;
-  while ((m = re.exec(t))) {
-    let v = parseFloat(m[2].replace(/\./g, '') + (m[3] ? '.' + m[3] : ''));
-    if (m[4]) v *= 1000;
-    const despues = t.slice(re.lastIndex, re.lastIndex + 14);
-    const antes = t.slice(Math.max(0, m.index - 6), m.index);
-    nums.push({
-      v: v,
-      dolar: /^(u|us|usd)/.test(m[1] || '') || /^\s*(dolares|dolar|usd|verdes|u\$s)/.test(despues),
-      peso: (m[1] || '').indexOf('$') === 0 || /^\s*(pesos|mangos|ars)/.test(despues),
-      tasa: /\b(a|al)\s*$/.test(antes) && !/^\s*(pesos|mangos)/.test(despues)
-    });
-  }
-  // también "mil dólares" / "cien dólares" en palabras
-  if (!nums.some(function (n) { return n.dolar; })) {
-    const p = /\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta|cuarenta|cincuenta|cien)?\s*(mil)?\s+(dolares|dolar|verdes)\b/.exec(t);
-    if (p && (p[1] || p[2])) nums.unshift({ v: (p[1] ? NUM_PALABRAS[p[1]] : 1) * (p[2] ? 1000 : 1), dolar: true });
-  }
+  // Todos los montos de la frase, marcando cuál viene pegado a "dólares" y cuál a "pesos"
+  const nums = buscarMontos_(t).map(function (n) {
+    const despues = t.slice(n.f, n.f + 14);
+    const antes = t.slice(Math.max(0, n.i - 6), n.i);
+    return {
+      v: n.v,
+      dolar: /(u\$s|us\$|usd)\s*$/.test(antes) || /^\s*(de\s+)?(dolares|dolar|usd|verdes|u\$s)/.test(despues),
+      peso: /\$\s*$/.test(antes) && !/u\$s\s*$|us\$\s*$/.test(antes) || /^\s*(de\s+)?(pesos|mangos|ars)/.test(despues),
+      tasa: /\b(a|al)\s*$/.test(antes) && !/^\s*(de\s+)?(pesos|mangos)/.test(despues)
+    };
+  });
   let usd = nums.filter(function (n) { return n.dolar; })[0] || nums.filter(function (n) { return !n.peso; })[0];
   if (!usd) return { error: 'No entendí cuántos dólares. Probá: compré 200 dólares a 1.250.000 pesos.' };
   const otro = nums.filter(function (n) { return n !== usd; })[0];
@@ -713,6 +759,81 @@ function interpretarCambio_(original, t, tipo, ctx) {
 }
 
 const TIPOS = ['gasto', 'ingreso', 'ahorro', 'retiro'];
+
+// Valor de cada palabra numérica (sin tildes)
+const VALOR_PALABRA = {
+  un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9,
+  diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19,
+  veinte: 20, veintiun: 21, veintiuno: 21, veintiuna: 21, veintidos: 22, veintitres: 23, veinticuatro: 24, veinticinco: 25,
+  veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29, treinta: 30, cuarenta: 40, cincuenta: 50,
+  sesenta: 60, setenta: 70, ochenta: 80, noventa: 90, cien: 100, ciento: 100,
+  doscientos: 200, doscientas: 200, trescientos: 300, trescientas: 300, cuatrocientos: 400, cuatrocientas: 400,
+  quinientos: 500, quinientas: 500, seiscientos: 600, seiscientas: 600, setecientos: 700, setecientas: 700,
+  ochocientos: 800, ochocientas: 800, novecientos: 900, novecientas: 900
+};
+
+/**
+ * Busca montos en un texto en minúsculas y sin tildes. Devuelve [{ v, i, f }] (valor, inicio, fin).
+ * Ej: "1.519.050", "1519050", "1 millon 519.050", "un millon quinientos diecinueve mil cincuenta",
+ *     "2,5 millones", "un millon y medio", "5 mil", "5 lucas", "mil quinientos".
+ */
+function buscarMontos_(t) {
+  const re = /\d[\d.,]*\d|\d|[a-z]+/g;
+  const toks = [];
+  let m;
+  while ((m = re.exec(t))) toks.push({ s: m[0], i: m.index, f: m.index + m[0].length });
+
+  const MULT = { mil: 1e3, luca: 1e3, lucas: 1e3, k: 1e3, millon: 1e6, millones: 1e6, palo: 1e6, palos: 1e6 };
+  const esNum = function (x) { return /^\d/.test(x) || VALOR_PALABRA[x] !== undefined || MULT[x] !== undefined; };
+  const valorDigitos = function (x) {
+    if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(x)) return parseFloat(x.replace(/\./g, '').replace(',', '.')); // 1.519.050 / 1.519.050,50
+    if (/^\d{1,3}(,\d{3})+$/.test(x)) return parseFloat(x.replace(/,/g, ''));                                  // 1,519,050
+    if (/^\d+([.,]\d{1,2})?$/.test(x)) return parseFloat(x.replace(',', '.'));                                  // 1519050 / 2,5 / 4500.50
+    return parseFloat(x.replace(/[.,]/g, ''));
+  };
+
+  const res = [];
+  let k = 0;
+  while (k < toks.length) {
+    if (!esNum(toks[k].s)) { k++; continue; }
+    // armar la corrida de palabras numéricas seguidas (solo espacios entre ellas; "y" permitido en el medio)
+    const ini = k;
+    let fin = k;
+    while (fin + 1 < toks.length) {
+      const sig = toks[fin + 1];
+      const entre = t.slice(toks[fin].f, sig.i);
+      if (!/^\s*$/.test(entre)) break;
+      if (esNum(sig.s)) { fin++; continue; }
+      if ((sig.s === 'y' || sig.s === 'con') && fin + 2 < toks.length && /^\s*$/.test(t.slice(sig.f, toks[fin + 2].i)) &&
+          (esNum(toks[fin + 2].s) || toks[fin + 2].s === 'medio')) {
+        if (toks[fin + 2].s === 'medio') { fin += 2; break; }
+        fin++; continue;
+      }
+      break;
+    }
+    // un "un"/"una" suelto ("un café") no es un monto
+    const corrida = toks.slice(ini, fin + 1).map(function (x) { return x.s; });
+    const util = corrida.filter(function (x) { return x !== 'y' && x !== 'con'; });
+    if (util.length === 1 && /^(un|una|uno)$/.test(util[0])) { k = fin + 1; continue; }
+
+    let total = 0, actual = 0, ultimoMult = 1;
+    corrida.forEach(function (x) {
+      if (x === 'y' || x === 'con') return;
+      if (x === 'medio') { total += (ultimoMult >= 1e3 ? ultimoMult : 1) / 2; return; }
+      if (MULT[x]) {
+        if (MULT[x] === 1e3 && total >= 1e6 && actual === 0 && x === 'mil') { actual = 1; }
+        total += (actual || 1) * MULT[x];
+        actual = 0; ultimoMult = MULT[x];
+        return;
+      }
+      actual += /^\d/.test(x) ? valorDigitos(x) : VALOR_PALABRA[x];
+    });
+    const v = Math.round((total + actual) * 100) / 100;
+    if (v > 0) res.push({ v: v, i: toks[ini].i, f: toks[fin].f });
+    k = fin + 1;
+  }
+  return res;
+}
 
 const NUM_PALABRAS = {
   un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10,

@@ -54,7 +54,9 @@ La planilla ahora tiene 5 hojas: **Movimientos**, **Fijos**, **Categorías**, **
 1. Abrí ese link en **Safari**.
 2. Pegá la **URL** del Paso 2 y la **clave secreta** → **Conectar mi planilla**.
 3. Tocá **Compartir → Agregar a pantalla de inicio**. Queda como una app más, con su ícono.
-4. Andá a **Ajustes → Tu cuenta en dólares** y poné cuántos dólares tenés ahorrados hoy (es el punto de partida).
+4. Andá a **Ajustes** y cargá tus puntos de partida:
+   - **Tu plata en pesos:** cuánto tenés disponible hoy (banco + billeteras + efectivo) y la fecha.
+   - **Tu cuenta en dólares:** cuántos dólares tenés ahorrados.
 
 > ¿Querés verla antes de configurar nada? En la pantalla de inicio tocá **"Ver la app con datos de ejemplo"**.
 
@@ -72,7 +74,13 @@ Arriba, ponele de nombre **Anotar gasto** y listo.
 
 **Cómo se usa:** *"Oye Siri, anotar gasto"* → Siri escucha → decís la frase → te confirma lo que entendió.
 
-> Tip: si querés, hacé un segundo atajo llamado **"Cuánto gasté"** igual al anterior pero sin el paso 1 y con `texto` fijo en `cuanto llevo gastado`.
+### Segundo atajo: "Anotar ingreso"
+1. En la app **Atajos**, mantené apretado el atajo **Anotar gasto** → **Duplicar**.
+2. Abrí la copia y cambiale el nombre a **Anotar ingreso**.
+3. En la acción **Obtener contenido de URL**, tocá **Añadir campo nuevo → Texto** y agregá: `tipo` → `ingreso`.
+4. **OK**. Ahora *"Oye Siri, anotar ingreso"* → *"950 mil de sueldo"* se anota siempre como ingreso.
+
+> Tip: si querés, hacé un tercer atajo llamado **"Cuánto gasté"** igual al anterior pero sin el paso 1 y con `texto` fijo en `cuanto llevo gastado`.
 
 ### Frases que entiende
 
@@ -81,8 +89,11 @@ Arriba, ponele de nombre **Anotar gasto** y listo.
 | gasté 8500 en el súper con débito | Gasto · $8.500 · Supermercado · Débito |
 | ayer gasté 5 mil en Uber con crédito | Gasto de **ayer** · $5.000 · Transporte · Crédito |
 | zapatillas 85.000 en 3 cuotas con visa | Gasto · $85.000 · Ropa · Crédito · **3 cuotas** |
-| pagué la luz 31.200 | **Marca el fijo "Luz" como pagado** este mes con $31.200 |
-| pagué el alquiler | Marca "Alquiler" como pagado con su monto estimado |
+| pagué la luz 31.200, **gasto fijo** | **Marca el fijo "Luz" como pagado** este mes con $31.200 |
+| pagué el alquiler **fijo** | Marca "Alquiler" como pagado con su monto estimado |
+| pagué el gimnasio 35 mil, **gasto fijo** | Si no tenías un fijo "Gimnasio", **lo crea** y lo marca pagado |
+| pagué la luz 31.200 (sin decir "fijo") | Gasto **variable**. Siri te avisa si tenés un fijo "Luz" pendiente |
+| *(anotar ingreso)* 950 mil de sueldo | Ingreso · $950.000 · Sueldo |
 | cobré 950 mil de sueldo | **Ingreso** · $950.000 · Sueldo |
 | me pagaron 200 lucas de Villa Tamen por transferencia | Ingreso · $200.000 · Freelance · Transferencia |
 | gasté 20 dólares en ChatGPT | Gasto en **US$** desde la cuenta en dólares |

@@ -241,6 +241,8 @@ nav.tabs button.on svg{stroke-width:2.3}
 .mini-usd small{display:block;font-size:12px;color:var(--muted);font-weight:600}
 .mini-usd b{font-family:var(--display);font-size:20px;font-weight:600}
 .mini-usd svg{color:var(--muted)}
+.minis{display:grid;gap:12px}
+@media (min-width:640px){.minis{grid-template-columns:1fr 1fr}}
 .mov .mt.ahorro{color:var(--gold)}
 .calc{font-size:13px;color:var(--muted);text-align:center;margin:-4px 0 12px}
 .calc b{color:var(--ink)}
@@ -408,6 +410,17 @@ function render() {
 /* ---------------- Resumen ---------------- */
 const signoUSD = m => (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? 1 : -1;
 const sumaPesos = arr => arr.reduce((a, m) => a + (Number(m.pesos) || 0), 0);
+/** Plata disponible en pesos al cierre de un mes (o null si no cargaste el saldo inicial). */
+function saldoARSHasta(mes) {
+  const aj = S.datos?.ajustes || {};
+  if (!aj.fechaInicialARS) return null;
+  return (S.datos?.movimientos || []).filter(m => m.fecha >= aj.fechaInicialARS && m.mes <= mes).reduce((a, m) => {
+    if (m.tipo === 'ahorro') return a - (Number(m.pesos) || 0);
+    if (m.tipo === 'retiro') return a + (Number(m.pesos) || 0);
+    if (m.moneda === 'USD') return a;
+    return a + (m.tipo === 'ingreso' ? 1 : -1) * (Number(m.monto) || 0);
+  }, Number(aj.saldoInicialARS) || 0);
+}
 function saldoUSDHasta(mes) {
   const ini = Number(S.datos?.ajustes?.saldoInicialUSD) || 0;
   return (S.datos?.movimientos || []).filter(m => m.moneda === 'USD' && m.mes <= mes)
@@ -459,6 +472,19 @@ function resumenPesos() {
   const porCat = agrupar(gastosL, 'categoria');
   const porMedio = agrupar(gastosL, 'medio');
   const saldoUSD = saldoUSDHasta(S.mes);
+  const aj = S.datos.ajustes || {};
+  const antesDeEmpezar = aj.fechaInicialARS && S.mes < aj.fechaInicialARS.slice(0, 7);
+  const saldoARS = antesDeEmpezar ? null : saldoARSHasta(S.mes);
+  const fechaCorta = f => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
+  const tarjetaPesos = saldoARS !== null
+    ? `<button class="card mini-usd" data-ir="ajustes">
+        <span class="em" style="background:var(--green-soft)">💵</span>
+        <span><small>${S.mes === mesActual() ? 'Tenés disponible en pesos' : 'Pesos al cierre del mes'}</small><b class="num ${saldoARS < 0 ? 'c-bordo' : ''}">${plata(saldoARS)}</b><small style="font-weight:500">desde el ${fechaCorta(aj.fechaInicialARS)}</small></span>
+        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>`
+    : `<button class="card mini-usd" data-ir="ajustes">
+        <span class="em" style="background:var(--green-soft)">💵</span>
+        <span><small>${antesDeEmpezar ? 'Tus pesos' : 'Plata disponible en pesos'}</small><b style="font-size:15px;font-family:var(--font)">${antesDeEmpezar ? 'Empezaste a contar el ' + fechaCorta(aj.fechaInicialARS) : 'Cargá cuánto tenés hoy'}</b></span>
+        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>`;
 
   const v = $('#resumenCuerpo');
   if (!movs.length && !todosFijos.length) {
@@ -478,6 +504,15 @@ function resumenPesos() {
       </div>
     </div>
 
+    <div class="minis">
+      ${tarjetaPesos}
+      <button class="card mini-usd" data-moneda="USD">
+        <span class="em">🐷</span>
+        <span><small>Tu cuenta en dólares</small><b class="num">${plata(saldoUSD, 'USD')}</b></span>
+        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
     <div class="stats">
       <div class="card stat"><div class="lbl">Gastos fijos</div><div class="v num c-navy">${plata(gFijos)}</div><div class="s">${gastos ? Math.round(gFijos / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Gastos variables</div><div class="v num c-bordo">${plata(gVar)}</div><div class="s">${gastos ? Math.round(gVar / gastos * 100) : 0}% del total</div></div>
@@ -485,11 +520,6 @@ function resumenPesos() {
       <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${saldo - falta < 0 ? 'c-bordo' : 'c-green'}">${plata(saldo - falta)}</div><div class="s">${pendientes.length ? `faltan ${plata(falta)} en fijos` : 'no te falta ningún fijo'}</div></div>
     </div>
 
-    <button class="card mini-usd" data-moneda="USD">
-      <span class="em">🐷</span>
-      <span><small>Tu cuenta en dólares</small><b class="num">${plata(saldoUSD, 'USD')}</b></span>
-      <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-    </button>
 
     <div class="grid g2">
       <div class="card">
@@ -973,6 +1003,13 @@ function renderAjustes() {
         ${S.demo ? '<button class="btn full" id="aSalirDemo" style="margin-top:10px">Salir del ejemplo</button>' : '<button class="btn full" id="aDesconectar" style="margin-top:10px">Desconectar este dispositivo</button>'}
       </div>
       <div class="card">
+        <h3>Tu plata en pesos</h3>
+        <label class="campo"><span>¿Cuánta plata tenés disponible en pesos? (sumá cuenta del banco, billeteras y efectivo)</span><input id="aIniArs" class="num" inputmode="decimal" placeholder="$ 0" value="${S.datos?.ajustes?.fechaInicialARS ? (Number(S.datos.ajustes.saldoInicialARS) || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
+        <label class="campo"><span>¿A qué fecha?</span><input id="aFechaArs" type="date" value="${esc(S.datos?.ajustes?.fechaInicialARS || hoyISO())}"></label>
+        <button class="btn full" id="aGuardarIniArs" ${S.datos ? '' : 'disabled'}>Guardar</button>
+        <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Desde esa fecha se suman tus ingresos y se restan tus gastos y lo que pasás a dólares. Los movimientos anteriores a esa fecha no se cuentan, porque ya están incluidos en este saldo. Los gastos con tarjeta de crédito se descuentan el día que los anotás.</p>
+      </div>
+      <div class="card">
         <h3>Tu cuenta en dólares</h3>
         <label class="campo"><span>¿Cuántos dólares tenías ahorrados antes de empezar a usar la app?</span><input id="aIni" class="num" inputmode="decimal" placeholder="US$ 0" value="${S.datos?.ajustes?.saldoInicialUSD || ''}"></label>
         <button class="btn full" id="aGuardarIni" ${S.datos ? '' : 'disabled'}>Guardar</button>
@@ -992,6 +1029,7 @@ function renderAjustes() {
           <div>compré 100 dólares a 1450</div>
           <div>gasté 20 dólares en ChatGPT</div>
           <div>cuántos dólares tengo</div>
+          <div>cuánta plata me queda</div>
           <div>cuánto llevo gastado</div>
         </div>
         <p class="ayuda" style="margin:12px 0 0">Las categorías, palabras clave y medios de pago se editan directo en la planilla (hojas "Categorías" y "Medios de pago").</p>
@@ -999,6 +1037,11 @@ function renderAjustes() {
     </div>`;
   $('#aGuardar').onclick = () => conectar('a');
   $('#aGuardarIni').onclick = () => hacer('guardarAjustes', { ajustes: { saldoInicialUSD: leerMonto($('#aIni').value) } }, 'Guardado');
+  $('#aGuardarIniArs').onclick = () => {
+    const txt = $('#aIniArs').value.trim();
+    if (!txt) return toast('Poné cuánta plata tenés en pesos (puede ser 0)', true);
+    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO() } }, 'Guardado ✓ Ya podés ver tu plata disponible en el Resumen');
+  };
   if ($('#aSalirDemo')) $('#aSalirDemo').onclick = () => { S.demo = false; S.datos = S.cfg ? guardado.get('mc_cache') : null; S.vista = 'resumen'; render(); if (S.cfg) refrescar(); };
   if ($('#aDesconectar')) $('#aDesconectar').onclick = () => {
     if (!confirm('¿Desconectar este dispositivo? Tus datos siguen en la planilla.')) return;
@@ -1069,7 +1112,8 @@ function crearDemo() {
       add({ tipo: 'gasto', monto: r100(min + rnd() * (max - min)), fecha: f(1 + Math.floor(rnd() * ultimo)), descripcion, categoria, medio, cuotas: categoria.startsWith('Ropa') && medio === 'Crédito' ? 3 : '' });
     }
   }
-  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400 } };
+  const d5 = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1);
+  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400, saldoInicialARS: 850000, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` } };
 }
 
 function demoApi(accion, x) {
