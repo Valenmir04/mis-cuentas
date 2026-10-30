@@ -427,13 +427,75 @@ const sumaPesos = arr => arr.reduce((a, m) => a + (Number(m.pesos) || 0), 0);
 const esCredito = medio => /cr[eé]dito/i.test(String(medio || ''));
 // Gasto en pesos con crédito: se suma a la tarjeta y se descuenta de tu plata recién cuando pagás el resumen
 const vaATarjeta = m => m.tipo === 'gasto' && m.moneda !== 'USD' && esCredito(m.medio);
+/**
+ * Estado de la tarjeta de crédito por resúmenes. Cada resumen ("ciclo") se identifica por el mes en que cierra (aaaa-mm).
+ * Una compra va al resumen que cierra en la primera fecha de cierre igual o posterior a la compra; la cuota k va k-1 resúmenes después.
+ * Los pagos se aplican primero a los resúmenes más viejos. Devuelve null si no configuraste el día de cierre.
+ */
+function calcularTarjeta(movs, aj, hoy) {
+  var pad = function (n) { return ('0' + n).slice(-2); };
+  var mover = function (mes, n) { var t = +mes.slice(0, 4) * 12 + (+mes.slice(5, 7) - 1) + n; return Math.floor(t / 12) + '-' + pad(t % 12 + 1); };
+  var dias = function (mes) { return new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5, 7), 0)).getUTCDate(); };
+  var C = Math.min(31, Math.max(0, Math.round(Number(aj.cierreTarjeta) || 0)));
+  if (!C) return null;
+  var V = Math.min(31, Math.max(1, Math.round(Number(aj.vencimientoTarjeta) || 0) || Math.min(31, C + 10)));
+  var cierre = function (ciclo) { return ciclo + '-' + pad(Math.min(C, dias(ciclo))); };
+  var vence = function (ciclo) { var mv = V > C ? ciclo : mover(ciclo, 1); return mv + '-' + pad(Math.min(V, dias(mv))); };
+  var cicloDe = function (f) { var mes = f.slice(0, 7); return f <= cierre(mes) ? mes : mover(mes, 1); };
+  var esCred = function (m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && /cr[eé]dito/i.test(String(m.medio || '')); };
+  var desde = aj.fechaTarjeta || aj.fechaInicialARS || '';
+  var ms = movs.filter(function (m) { return m.fecha >= desde; });
+  var pagos = ms.filter(function (m) { return m.tipo === 'pagoTarjeta'; }).sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
+  var ciclos = {};
+  var add = function (ciclo, monto, item) {
+    if (!ciclos[ciclo]) ciclos[ciclo] = { ciclo: ciclo, monto: 0, items: [] };
+    ciclos[ciclo].monto += monto;
+    ciclos[ciclo].items.push(item);
+  };
+  var cicloIni = cicloDe(desde || hoy);
+  var dIni = Number(aj.deudaInicialTarjeta) || 0, cIni = Number(aj.consumosInicialesTarjeta) || 0;
+  if (dIni) add(mover(cicloIni, -1), dIni, { descripcion: 'Resumen que ya había cerrado', fecha: desde, monto: dIni, n: 1, cuotaNro: 1, inicial: true });
+  if (cIni) add(cicloIni, cIni, { descripcion: 'Consumos que ya tenías', fecha: desde, monto: cIni, n: 1, cuotaNro: 1, inicial: true });
+  ms.filter(esCred).forEach(function (m) {
+    var n = Math.max(1, Number(m.cuotas) || 1), c0 = cicloDe(m.fecha);
+    for (var k = 0; k < n; k++) add(mover(c0, k), m.monto / n, { id: m.id, descripcion: m.descripcion || m.categoria, fecha: m.fecha, monto: m.monto, n: n, cuotaNro: k + 1 });
+  });
+  var resto = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
+  var lista = Object.keys(ciclos).sort().map(function (k) {
+    var c = ciclos[k];
+    c.pagado = Math.min(resto, c.monto); resto -= c.pagado;
+    c.pendiente = c.monto - c.pagado; c.cierra = cierre(c.ciclo); c.vence = vence(c.ciclo);
+    return c;
+  });
+  var abierto = cicloDe(hoy);
+  var actual = ciclos[abierto] || { ciclo: abierto, monto: 0, items: [], pagado: 0, pendiente: 0, cierra: cierre(abierto), vence: vence(abierto) };
+  var cerrados = lista.filter(function (c) { return c.ciclo < abierto && c.pendiente > 0.5; });
+  var futuros = lista.filter(function (c) { return c.ciclo > abierto && c.pendiente > 0.5; });
+  var sumaP = function (l) { return l.reduce(function (a, c) { return a + c.pendiente; }, 0); };
+  var aPagar = sumaP(cerrados);
+  return {
+    conCiclos: true, cerrados: cerrados, aPagar: aPagar,
+    venceCerrado: cerrados.length ? cerrados[cerrados.length - 1].vence : "",
+    vencido: cerrados.some(function (c) { return c.vence < hoy; }),
+    actual: actual, futuros: futuros, enCuotasFuturas: sumaP(futuros),
+    deuda: aPagar + actual.pendiente + sumaP(futuros),
+    proximo: aPagar > 0.5 ? aPagar : actual.pendiente,
+    ultimoPago: pagos[pagos.length - 1] || null,
+    fechaCierre: cierre, fechaVence: vence, cicloDe: cicloDe
+  };
+}
+
+
 function infoTarjeta() {
   const aj = S.datos?.ajustes || {};
-  const desde = aj.fechaInicialARS || '';
+  const tarjetas = medios().filter(esCredito);
+  const est = calcularTarjeta(S.datos?.movimientos || [], aj, hoyISO());
+  if (est) return { ...est, hay: true, tarjetas };
+  const desde = aj.fechaTarjeta || aj.fechaInicialARS || '';
   const movs = (S.datos?.movimientos || []).filter(m => m.fecha >= desde);
   const consumos = movs.filter(vaATarjeta);
   const pagos = movs.filter(m => m.tipo === 'pagoTarjeta').sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const deudaIni = Number(aj.deudaInicialTarjeta) || 0;
+  const deudaIni = (Number(aj.deudaInicialTarjeta) || 0) + (Number(aj.consumosInicialesTarjeta) || 0);
   const deuda = deudaIni + suma(consumos) - suma(pagos);
   const ultimoPago = pagos[pagos.length - 1] || null;
   // Próximo resumen (estimado): lo comprado desde el último pago + la cuota de este mes de compras en cuotas anteriores
@@ -512,6 +574,7 @@ function resumenPesos() {
   const enTarjetaMes = suma(gastosL.filter(vaATarjeta));
   const pagosTarjetaMes = suma(movs.filter(m => m.tipo === 'pagoTarjeta'));
   const tj = infoTarjeta();
+  const fc = f => f ? `${+f.slice(8, 10)}/${+f.slice(5, 7)}` : "";
   const saldo = ingresos - (gastos - enTarjetaMes) - pagosTarjetaMes - ahorroPesos;
   const gFijos = suma(gastosL.filter(m => m.idFijo));
   const gVar = gastos - gFijos;
@@ -560,7 +623,10 @@ function resumenPesos() {
       ${tarjetaPesos}
       ${tj.hay || tj.tarjetas.length ? `<button class="card mini-usd" data-tarjeta="1">
         <span class="em" style="background:var(--bordo-soft)">💳</span>
-        <span><small>Tarjeta de crédito · próximo resumen</small><b class="num ${tj.proximo ? 'c-bordo' : ''}">${plata(tj.proximo)}</b><small style="font-weight:500">${tj.deuda > tj.proximo + 0.5 ? `Debés ${plata(tj.deuda)} con cuotas futuras` : tj.deuda > 0.5 ? 'Es todo lo que debés' : 'No debés nada 🎉'}</small></span>
+        ${tj.conCiclos ? (tj.aPagar > 0.5
+          ? `<span><small>Tarjeta · ${tj.vencido ? '<span class="c-bordo">venció el ' + fc(tj.venceCerrado) + '</span>' : 'vence el ' + fc(tj.venceCerrado)}</small><b class="num c-bordo">${plata(tj.aPagar)}</b><small style="font-weight:500">Resumen en curso: ${plata(tj.actual.pendiente)} · cierra el ${fc(tj.actual.cierra)}</small></span>`
+          : `<span><small>Tarjeta · resumen en curso</small><b class="num">${plata(tj.actual.pendiente)}</b><small style="font-weight:500">Cierra el ${fc(tj.actual.cierra)} · vence el ${fc(tj.actual.vence)}</small></span>`)
+        : `<span><small>Tarjeta de crédito · próximo resumen</small><b class="num ${tj.proximo ? 'c-bordo' : ''}">${plata(tj.proximo)}</b><small style="font-weight:500">${tj.deuda > tj.proximo + 0.5 ? `Debés ${plata(tj.deuda)} con cuotas futuras` : tj.deuda > 0.5 ? 'Es todo lo que debés' : 'No debés nada 🎉'} · <u>configurá el cierre</u></small></span>`}
         <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>` : ''}
       <button class="card mini-usd" data-moneda="USD">
         <span class="em">🐷</span>
@@ -887,6 +953,7 @@ function opciones(lista, sel) { return lista.map(o => `<option ${o === sel ? 'se
 
 function abrirTarjeta() {
   const tj = infoTarjeta();
+  if (tj.conCiclos) return abrirTarjetaCiclos(tj);
   const fc = f => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
   const item = m => `<div class="tj-item"><span><b>${esc(m.descripcion || m.categoria)}</b><small>${fc(m.fecha)}${m.n > 1 ? ` · cuota ${m.cuotaNro} de ${m.n} (total ${plata(m.monto)})` : ''}</small></span><span class="num" style="font-weight:600">${plata(m.monto / m.n)}</span></div>`;
   abrirHoja(`
@@ -901,8 +968,49 @@ function abrirTarjeta() {
     <div class="tj-tit" style="margin-top:16px">${tj.ultimoPago ? 'Compras desde el último pago' : 'Compras con crédito'}</div>
     ${tj.nuevos.length ? `<div class="tj-lista">${tj.nuevos.sort((a, b) => b.fecha.localeCompare(a.fecha)).map(item).join('')}</div>` : '<p class="ayuda" style="margin:6px 0 14px">No hay compras nuevas con crédito.</p>'}
     ${tj.cuotasViejas.length ? `<div class="tj-tit">Cuotas que siguen</div><div class="tj-lista">${tj.cuotasViejas.map(item).join('')}</div>` : ''}
-    <p class="ayuda" style="margin:0">Es un estimado: el monto exacto lo ves en el resumen del banco. Cuando pagues, poné lo que pagaste de verdad. Recién ahí se descuenta de tu plata.</p>`);
+    <p class="ayuda" style="margin:0">Es un estimado: el monto exacto lo ves en el resumen del banco. Cuando pagues, poné lo que pagaste de verdad. Recién ahí se descuenta de tu plata.</p>
+    <button class="btn full" id="tjConfig" style="margin-top:14px">⚙️ Cargar día de cierre y vencimiento</button>`);
   if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo || tj.deuda);
+  $('#tjConfig').onclick = irAjustesTarjeta;
+}
+
+function irAjustesTarjeta() {
+  cerrarHoja(); S.vista = 'ajustes'; guardado.set('mc_vista', S.vista); render();
+  setTimeout(() => { const el = $('#cardTarjeta'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+}
+
+function abrirTarjetaCiclos(tj) {
+  const fc = f => f ? `${+f.slice(8, 10)}/${+f.slice(5, 7)}` : '';
+  const nombreMes = ciclo => new Date(+ciclo.slice(0, 4), +ciclo.slice(5, 7) - 1, 1).toLocaleDateString('es-AR', { month: 'long' });
+  const item = it => `<div class="tj-item"><span><b>${esc(it.descripcion)}</b><small>${it.inicial ? 'Cargado en Ajustes' : fc(it.fecha)}${it.n > 1 ? ` · cuota ${it.cuotaNro} de ${it.n} (total ${plata(it.monto)})` : ''}</small></span><span class="num" style="font-weight:600">${plata(it.monto / it.n)}</span></div>`;
+  const items = l => `<div class="tj-lista">${l.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).map(item).join('')}</div>`;
+  const cerradosItems = tj.cerrados.flatMap(c => c.items);
+  const pagadoCerrado = tj.cerrados.reduce((a, c) => a + c.pagado, 0);
+  const a = tj.actual;
+  abrirHoja(`
+    <h2>💳 Tarjeta de crédito</h2>
+    ${tj.aPagar > 0.5 ? `
+    <div class="tj-head">
+      <small>${tj.vencido ? '⚠️ Venció el ' + fc(tj.venceCerrado) : 'A pagar · vence el ' + fc(tj.venceCerrado)}</small>
+      <b class="num">${plata(tj.aPagar)}</b>
+      <p>Es el resumen que ya cerró${tj.cerrados.length === 1 ? ' el ' + fc(tj.cerrados[0].cierra) : ''}.${pagadoCerrado > 0.5 ? ` Ya pagaste ${plata(pagadoCerrado)} de este resumen.` : ''}</p>
+    </div>
+    <button class="btn prim full" id="tjPagar">Ya pagué la tarjeta</button>
+    <div class="tj-tit" style="margin-top:16px">Qué tiene este resumen</div>${items(cerradosItems)}` : ''}
+
+    <div class="tj-head" style="background:var(--surface-2)${tj.aPagar > 0.5 ? ';margin-top:6px' : ''}">
+      <small style="color:var(--muted)">Resumen en curso · cierra el ${fc(a.cierra)} · vence el ${fc(a.vence)}</small>
+      <b class="num" style="color:var(--ink)">${plata(a.pendiente)}</b>
+      <p>${tj.aPagar > 0.5 ? 'Lo que vayas comprando con crédito hasta el cierre se suma acá.' : 'No tenés ningún resumen cerrado sin pagar. Lo que compres con crédito hasta el cierre se suma acá.'}${a.pagado > 0.5 ? ` Ya adelantaste ${plata(a.pagado)}.` : ''}</p>
+    </div>
+    ${tj.aPagar > 0.5 ? '' : `<button class="btn prim full" id="tjPagar" ${a.pendiente > 0.5 ? '' : 'disabled'}>Ya pagué la tarjeta</button>`}
+    ${a.items.length ? `<div class="tj-tit" style="margin-top:16px">Compras del resumen en curso</div>${items(a.items)}` : '<p class="ayuda" style="margin:12px 0 14px">Todavía no hay compras en este resumen.</p>'}
+
+    ${tj.futuros.length ? `<div class="tj-tit">Cuotas de los próximos resúmenes</div><div class="tj-lista">${tj.futuros.map(c => `<div class="tj-item"><span><b>Resumen de ${esc(nombreMes(c.ciclo))}</b><small>vence el ${fc(c.vence)}</small></span><span class="num" style="font-weight:600">${plata(c.pendiente)}</span></div>`).join('')}</div>` : ''}
+    <p class="ayuda" style="margin:0">En total debés <b>${plata(tj.deuda)}</b>${tj.enCuotasFuturas > 0.5 ? ', contando cuotas futuras' : ''}. Lo que pagues se descuenta de tu plata y se aplica primero al resumen más viejo.</p>
+    <button class="btn full" id="tjConfig" style="margin-top:14px">⚙️ Cambiar cierre, vencimiento o saldo</button>`);
+  if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo);
+  $('#tjConfig').onclick = irAjustesTarjeta;
 }
 
 function abrirPagoTarjeta(mov, sugerido) {
@@ -1105,6 +1213,7 @@ function renderBienvenida() {
   $('#bDemo').onclick = () => { S.demo = true; S.datos = crearDemo(); S.vista = 'resumen'; render(); };
 }
 
+const fmtCampo = v => Number(v) ? (+v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '';
 function renderAjustes() {
   const v = $('#v-ajustes');
   v.innerHTML = `
@@ -1121,9 +1230,20 @@ function renderAjustes() {
         <h3>Tu plata en pesos</h3>
         <label class="campo"><span>¿Cuánta plata tenés disponible en pesos? (sumá cuenta del banco, billeteras y efectivo)</span><input id="aIniArs" class="num" inputmode="decimal" placeholder="$ 0" value="${S.datos?.ajustes?.fechaInicialARS ? (Number(S.datos.ajustes.saldoInicialARS) || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
         <label class="campo"><span>¿A qué fecha?</span><input id="aFechaArs" type="date" value="${esc(S.datos?.ajustes?.fechaInicialARS || hoyISO())}"></label>
-        <label class="campo"><span>💳 ¿Debés algo en la tarjeta de crédito que todavía no pagaste? (el resumen pendiente; si no, dejalo en 0)</span><input id="aDeudaTj" class="num" inputmode="decimal" placeholder="$ 0" value="${S.datos?.ajustes?.deudaInicialTarjeta ? (+S.datos.ajustes.deudaInicialTarjeta).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
         <button class="btn full" id="aGuardarIniArs" ${S.datos ? '' : 'disabled'}>Guardar</button>
         <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Desde esa fecha se suman tus ingresos y se restan tus gastos y lo que pasás a dólares. Los movimientos anteriores a esa fecha no se cuentan, porque ya están incluidos en este saldo. Los gastos con tarjeta de crédito no se descuentan al anotarlos: se juntan en la tarjeta y se descuentan cuando pagás el resumen.</p>
+      </div>
+      <div class="card" id="cardTarjeta">
+        <h3>💳 Tarjeta de crédito</h3>
+        <div class="dos">
+          <label class="campo"><span>Día de cierre del resumen</span><input id="aCierreTj" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 26" value="${S.datos?.ajustes?.cierreTarjeta || ''}"></label>
+          <label class="campo"><span>Día de vencimiento</span><input id="aVenceTj" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 5" value="${S.datos?.ajustes?.vencimientoTarjeta || ''}"></label>
+        </div>
+        <label class="campo"><span>¿Cuánto te falta pagar del último resumen que ya cerró? (si ya lo pagaste, 0)</span><input id="aDeudaTj" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(S.datos?.ajustes?.deudaInicialTarjeta)}"></label>
+        <label class="campo"><span>¿Cuánto llevás gastado en el resumen que todavía no cerró? (en la app del banco suele decir "consumos del período" o "próximo resumen")</span><input id="aConsTj" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(S.datos?.ajustes?.consumosInicialesTarjeta)}"></label>
+        <label class="campo"><span>¿A qué fecha?</span><input id="aFechaTj" type="date" value="${esc(S.datos?.ajustes?.fechaTarjeta || hoyISO())}"></label>
+        <button class="btn full" id="aGuardarTj" ${S.datos ? '' : 'disabled'}>Guardar</button>
+        <p class="ayuda" style="margin:10px 0 0">Desde esa fecha, lo que anotes con crédito se suma al resumen que corresponda según el cierre. Las compras en cuotas reparten una cuota por resumen. Las compras con crédito anteriores a esa fecha no se cuentan, porque ya están en estos montos.</p>
       </div>
       <div class="card">
         <h3>Tu cuenta en dólares</h3>
@@ -1155,10 +1275,15 @@ function renderAjustes() {
     </div>`;
   $('#aGuardar').onclick = () => conectar('a');
   $('#aGuardarIni').onclick = () => hacer('guardarAjustes', { ajustes: { saldoInicialUSD: leerMonto($('#aIni').value) } }, 'Guardado');
+  $('#aGuardarTj').onclick = () => {
+    const cierre = +$('#aCierreTj').value, vence = +$('#aVenceTj').value;
+    if (!(cierre >= 1 && cierre <= 31) || !(vence >= 1 && vence <= 31)) return toast('Poné el día de cierre y el de vencimiento (entre 1 y 31)', true);
+    hacer('guardarAjustes', { ajustes: { cierreTarjeta: cierre, vencimientoTarjeta: vence, deudaInicialTarjeta: leerMonto($('#aDeudaTj').value), consumosInicialesTarjeta: leerMonto($('#aConsTj').value), fechaTarjeta: $('#aFechaTj').value || hoyISO() } }, 'Tarjeta guardada ✓');
+  };
   $('#aGuardarIniArs').onclick = () => {
     const txt = $('#aIniArs').value.trim();
     if (!txt) return toast('Poné cuánta plata tenés en pesos (puede ser 0)', true);
-    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO(), deudaInicialTarjeta: leerMonto($('#aDeudaTj').value) } }, 'Guardado ✓ Ya podés ver tu plata disponible en el Resumen');
+    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO(), } }, 'Guardado ✓ Ya podés ver tu plata disponible en el Resumen');
   };
   if ($('#aSalirDemo')) $('#aSalirDemo').onclick = () => { S.demo = false; S.datos = S.cfg ? guardado.get('mc_cache') : null; S.vista = 'resumen'; render(); if (S.cfg) refrescar(); };
   if ($('#aDesconectar')) $('#aDesconectar').onclick = () => {
@@ -1230,16 +1355,17 @@ function crearDemo() {
       add({ tipo: 'gasto', monto: r100(min + rnd() * (max - min)), fecha: f(1 + Math.floor(rnd() * ultimo)), descripcion, categoria, medio, cuotas: categoria.startsWith('Ropa') && medio === 'Crédito' ? 3 : '' });
     }
   }
-  // pagos de la tarjeta: el día 10 de cada mes se paga lo de crédito del mes anterior
-  for (let k = 4; k >= 0; k--) {
-    const d0 = new Date(hoy.getFullYear(), hoy.getMonth() - k, 1);
-    const mes = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}`, prev = moverMes(mes, -1);
-    if (k === 0 && hoy.getDate() < 10) continue;
-    const monto = r100(movs.filter(m => m.mes === prev && m.tipo === 'gasto' && m.moneda !== 'USD' && m.medio === 'Crédito').reduce((a, m) => a + m.monto / (Number(m.cuotas) || 1), 0));
-    if (monto) movs.push({ id: idr(), tipo: 'pagoTarjeta', monto, moneda: 'ARS', fecha: `${mes}-10`, mes, descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', medio: 'Crédito', cuotas: '', idFijo: '', origen: 'app', creado: '' });
-  }
+  // pagos de la tarjeta: cada día 5 se paga el resumen que cerró el 26 del mes anterior
   const d5 = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1);
-  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400, saldoInicialARS: 1800000, deudaInicialTarjeta: 0, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` } };
+  const ajDemo = { saldoInicialUSD: 2400, saldoInicialARS: 1800000, deudaInicialTarjeta: 0, consumosInicialesTarjeta: 0, cierreTarjeta: 26, vencimientoTarjeta: 5, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` };
+  for (let k = 4; k >= 0; k--) {
+    const d0 = new Date(hoy.getFullYear(), hoy.getMonth() - k, 5);
+    if (d0 > hoy) continue;
+    const fecha = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}-05`;
+    const monto = Math.round(calcularTarjeta(movs, ajDemo, fecha).aPagar);
+    if (monto) movs.push({ id: idr(), tipo: 'pagoTarjeta', monto, moneda: 'ARS', fecha, mes: fecha.slice(0, 7), descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', medio: 'Crédito', cuotas: '', idFijo: '', origen: 'app', creado: '' });
+  }
+  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: ajDemo };
 }
 
 function demoApi(accion, x) {

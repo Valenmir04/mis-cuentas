@@ -34,7 +34,11 @@ const AJUSTES_INICIALES = [
   ['saldoInicialUSD', 0, 'Dólares que ya tenías ahorrados antes de empezar a usar la app'],
   ['saldoInicialARS', 0, 'Pesos que tenías disponibles en la fecha de abajo'],
   ['fechaInicialARS', '', 'Desde esta fecha se suman ingresos y se restan gastos en pesos (aaaa-mm-dd)'],
-  ['deudaInicialTarjeta', 0, 'Lo que ya debías en la tarjeta de crédito en esa fecha (resumen sin pagar)']
+  ['deudaInicialTarjeta', 0, 'Tarjeta: lo que faltaba pagar del último resumen cerrado, en la fecha de la tarjeta'],
+  ['consumosInicialesTarjeta', 0, 'Tarjeta: lo que ya llevabas gastado en el resumen en curso, en la fecha de la tarjeta'],
+  ['cierreTarjeta', '', 'Tarjeta: día del mes en que cierra el resumen'],
+  ['vencimientoTarjeta', '', 'Tarjeta: día del mes en que vence (se paga) el resumen'],
+  ['fechaTarjeta', '', 'Tarjeta: desde esta fecha se suman las compras con crédito (aaaa-mm-dd)']
 ];
 
 // Podés editar todo esto después directamente en la planilla.
@@ -231,11 +235,12 @@ function datos_() {
 
 function leerAjustes_() {
   const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJAS.AJU);
-  const res = { saldoInicialUSD: 0, saldoInicialARS: 0, fechaInicialARS: '', deudaInicialTarjeta: 0 };
+  const res = { saldoInicialUSD: 0, saldoInicialARS: 0, fechaInicialARS: '', deudaInicialTarjeta: 0, consumosInicialesTarjeta: 0, cierreTarjeta: 0, vencimientoTarjeta: 0, fechaTarjeta: '' };
+  const NUMEROS = ['saldoInicialUSD', 'saldoInicialARS', 'deudaInicialTarjeta', 'consumosInicialesTarjeta', 'cierreTarjeta', 'vencimientoTarjeta'];
   if (!h || h.getLastRow() < 2) return res;
   h.getRange(2, 1, h.getLastRow() - 1, 2).getValues().forEach(function (r) {
-    if (r[0] === 'saldoInicialUSD' || r[0] === 'saldoInicialARS' || r[0] === 'deudaInicialTarjeta') res[r[0]] = Number(String(r[1]).replace(',', '.')) || 0;
-    if (r[0] === 'fechaInicialARS') res.fechaInicialARS = r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'yyyy-MM-dd') : String(r[1]).trim();
+    if (NUMEROS.indexOf(r[0]) >= 0) res[r[0]] = Number(String(r[1]).replace(',', '.')) || 0;
+    if (r[0] === 'fechaInicialARS' || r[0] === 'fechaTarjeta') res[r[0]] = r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'yyyy-MM-dd') : String(r[1]).trim();
   });
   return res;
 }
@@ -257,6 +262,10 @@ function guardarAjustes_(a) {
     poner('fechaInicialARS', f);
   }
   if (a.deudaInicialTarjeta !== undefined) poner('deudaInicialTarjeta', Math.abs(Number(a.deudaInicialTarjeta)) || 0);
+  if (a.consumosInicialesTarjeta !== undefined) poner('consumosInicialesTarjeta', Math.abs(Number(a.consumosInicialesTarjeta)) || 0);
+  if (a.cierreTarjeta !== undefined) poner('cierreTarjeta', Math.min(31, Math.max(1, Math.round(Number(a.cierreTarjeta) || 1))));
+  if (a.vencimientoTarjeta !== undefined) poner('vencimientoTarjeta', Math.min(31, Math.max(1, Math.round(Number(a.vencimientoTarjeta) || 1))));
+  if (a.fechaTarjeta !== undefined) poner('fechaTarjeta', /^\d{4}-\d{2}-\d{2}$/.test(String(a.fechaTarjeta)) ? a.fechaTarjeta : hoy_());
 }
 
 /* ---------- Tarjeta de crédito ---------- */
@@ -267,16 +276,92 @@ function esCredito_(medio) { return /cr[eé]dito/i.test(String(medio || '')); }
 /** Gasto en pesos con tarjeta de crédito: se suma a la tarjeta y no a tu plata hasta que pagás el resumen. */
 function vaATarjeta_(m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && esCredito_(m.medio); }
 
+/**
+ * Estado de la tarjeta de crédito por resúmenes. Cada resumen ("ciclo") se identifica por el mes en que cierra (aaaa-mm).
+ * Una compra va al resumen que cierra en la primera fecha de cierre igual o posterior a la compra; la cuota k va k-1 resúmenes después.
+ * Los pagos se aplican primero a los resúmenes más viejos. Devuelve null si no configuraste el día de cierre.
+ */
+function calcularTarjeta(movs, aj, hoy) {
+  var pad = function (n) { return ('0' + n).slice(-2); };
+  var mover = function (mes, n) { var t = +mes.slice(0, 4) * 12 + (+mes.slice(5, 7) - 1) + n; return Math.floor(t / 12) + '-' + pad(t % 12 + 1); };
+  var dias = function (mes) { return new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5, 7), 0)).getUTCDate(); };
+  var C = Math.min(31, Math.max(0, Math.round(Number(aj.cierreTarjeta) || 0)));
+  if (!C) return null;
+  var V = Math.min(31, Math.max(1, Math.round(Number(aj.vencimientoTarjeta) || 0) || Math.min(31, C + 10)));
+  var cierre = function (ciclo) { return ciclo + '-' + pad(Math.min(C, dias(ciclo))); };
+  var vence = function (ciclo) { var mv = V > C ? ciclo : mover(ciclo, 1); return mv + '-' + pad(Math.min(V, dias(mv))); };
+  var cicloDe = function (f) { var mes = f.slice(0, 7); return f <= cierre(mes) ? mes : mover(mes, 1); };
+  var esCred = function (m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && /cr[eé]dito/i.test(String(m.medio || '')); };
+  var desde = aj.fechaTarjeta || aj.fechaInicialARS || '';
+  var ms = movs.filter(function (m) { return m.fecha >= desde; });
+  var pagos = ms.filter(function (m) { return m.tipo === 'pagoTarjeta'; }).sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
+  var ciclos = {};
+  var add = function (ciclo, monto, item) {
+    if (!ciclos[ciclo]) ciclos[ciclo] = { ciclo: ciclo, monto: 0, items: [] };
+    ciclos[ciclo].monto += monto;
+    ciclos[ciclo].items.push(item);
+  };
+  var cicloIni = cicloDe(desde || hoy);
+  var dIni = Number(aj.deudaInicialTarjeta) || 0, cIni = Number(aj.consumosInicialesTarjeta) || 0;
+  if (dIni) add(mover(cicloIni, -1), dIni, { descripcion: 'Resumen que ya había cerrado', fecha: desde, monto: dIni, n: 1, cuotaNro: 1, inicial: true });
+  if (cIni) add(cicloIni, cIni, { descripcion: 'Consumos que ya tenías', fecha: desde, monto: cIni, n: 1, cuotaNro: 1, inicial: true });
+  ms.filter(esCred).forEach(function (m) {
+    var n = Math.max(1, Number(m.cuotas) || 1), c0 = cicloDe(m.fecha);
+    for (var k = 0; k < n; k++) add(mover(c0, k), m.monto / n, { id: m.id, descripcion: m.descripcion || m.categoria, fecha: m.fecha, monto: m.monto, n: n, cuotaNro: k + 1 });
+  });
+  var resto = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
+  var lista = Object.keys(ciclos).sort().map(function (k) {
+    var c = ciclos[k];
+    c.pagado = Math.min(resto, c.monto); resto -= c.pagado;
+    c.pendiente = c.monto - c.pagado; c.cierra = cierre(c.ciclo); c.vence = vence(c.ciclo);
+    return c;
+  });
+  var abierto = cicloDe(hoy);
+  var actual = ciclos[abierto] || { ciclo: abierto, monto: 0, items: [], pagado: 0, pendiente: 0, cierra: cierre(abierto), vence: vence(abierto) };
+  var cerrados = lista.filter(function (c) { return c.ciclo < abierto && c.pendiente > 0.5; });
+  var futuros = lista.filter(function (c) { return c.ciclo > abierto && c.pendiente > 0.5; });
+  var sumaP = function (l) { return l.reduce(function (a, c) { return a + c.pendiente; }, 0); };
+  var aPagar = sumaP(cerrados);
+  return {
+    conCiclos: true, cerrados: cerrados, aPagar: aPagar,
+    venceCerrado: cerrados.length ? cerrados[cerrados.length - 1].vence : "",
+    vencido: cerrados.some(function (c) { return c.vence < hoy; }),
+    actual: actual, futuros: futuros, enCuotasFuturas: sumaP(futuros),
+    deuda: aPagar + actual.pendiente + sumaP(futuros),
+    proximo: aPagar > 0.5 ? aPagar : actual.pendiente,
+    ultimoPago: pagos[pagos.length - 1] || null,
+    fechaCierre: cierre, fechaVence: vence, cicloDe: cicloDe
+  };
+}
+
 /** Lo que debés en total en la tarjeta (con todas las cuotas que faltan). */
 function deudaTarjeta_(movs, ajustes) {
   ajustes = ajustes || leerAjustes_();
-  const desde = ajustes.fechaInicialARS || '';
+  const est = calcularTarjeta(movs, ajustes, hoy_());
+  if (est) return est.deuda;
+  const desde = ajustes.fechaTarjeta || ajustes.fechaInicialARS || '';
   return movs.reduce(function (a, m) {
     if (m.fecha < desde) return a;
     if (vaATarjeta_(m)) return a + m.monto;
     if (m.tipo === 'pagoTarjeta') return a - m.monto;
     return a;
-  }, ajustes.deudaInicialTarjeta || 0);
+  }, (ajustes.deudaInicialTarjeta || 0) + (ajustes.consumosInicialesTarjeta || 0));
+}
+
+function fechaCorta_(f) { return Number(f.slice(8, 10)) + '/' + Number(f.slice(5, 7)); }
+
+/** Frase para Siri sobre la tarjeta. */
+function textoTarjeta_(movs, aj) {
+  const est = calcularTarjeta(movs, aj, hoy_());
+  if (!est) {
+    const d = deudaTarjeta_(movs, aj);
+    return d > 0.5 ? 'En la tarjeta de crédito debés ' + fmtMonto_(d, 'ARS') + ', contando cuotas futuras. ' : '';
+  }
+  let s = '';
+  if (est.aPagar > 0.5) s += 'De la tarjeta tenés que pagar ' + fmtMonto_(est.aPagar, 'ARS') + (est.vencido ? ', que ya venció el ' : ', que vence el ') + fechaCorta_(est.venceCerrado) + '. ';
+  if (est.actual.pendiente > 0.5) s += 'En el resumen en curso llevás ' + fmtMonto_(est.actual.pendiente, 'ARS') + ', cierra el ' + fechaCorta_(est.actual.cierra) + '. ';
+  if (!s) s = 'No debés nada en la tarjeta. ';
+  return s;
 }
 
 /** Plata disponible en pesos: saldo inicial + ingresos y ventas de USD − gastos y compras de USD (desde la fecha inicial). */
@@ -557,7 +642,9 @@ function procesarTexto_(texto, origen, tipoForzado) {
     const queda = deudaTarjeta_(leer_('MOV'));
     mensaje += queda > 0.5 ? ' En la tarjeta te quedan ' + fmtMonto_(queda, 'ARS') + ' por pagar, contando cuotas futuras.' : ' Ya no debés nada en la tarjeta.';
   } else if (vaATarjeta_(mov)) {
-    mensaje += ' Va a la tarjeta: se descuenta de tu plata cuando pagues el resumen.';
+    const est = calcularTarjeta([mov], leerAjustes_(), hoy_());
+    mensaje += est ? ' Va al resumen que cierra el ' + fechaCorta_(est.fechaCierre(est.cicloDe(mov.fecha))) + ' y vence el ' + fechaCorta_(est.fechaVence(est.cicloDe(mov.fecha))) + '. Se descuenta de tu plata cuando lo pagues.'
+      : ' Va a la tarjeta: se descuenta de tu plata cuando pagues el resumen.';
   }
   if (r.fijoParecido) {
     const mes = r.fecha.slice(0, 7);
@@ -599,8 +686,7 @@ function resumenParaSiri_(ctx) {
   let s = 'En lo que va del mes gastaste ' + fmtMonto_(suma('gasto'), 'ARS') + ' e ingresaste ' + fmtMonto_(suma('ingreso'), 'ARS') + '. ';
   const disponible = saldoARS_(leer_('MOV'));
   if (disponible !== null) s += 'Tenés disponibles ' + (disponible < 0 ? 'menos ' : '') + fmtMonto_(disponible, 'ARS') + ' en pesos. ';
-  const deuda = deudaTarjeta_(leer_('MOV'));
-  if (deuda > 0.5) s += 'En la tarjeta de crédito debés ' + fmtMonto_(deuda, 'ARS') + ', contando cuotas futuras. ';
+  s += textoTarjeta_(leer_('MOV'), leerAjustes_());
   s += 'En dólares: ' + (ahorroUSD ? 'este mes ahorraste ' + fmtMonto_(ahorroUSD, 'USD') + ', ' : '') +
     (gastoUSD ? 'gastaste ' + fmtMonto_(gastoUSD, 'USD') + ', ' : '') + 'y tu cuenta tiene ' + fmtMonto_(saldo, 'USD') + '. ';
   if (!ctx.fijos.some(function (f) { return f.activo; })) return s;
