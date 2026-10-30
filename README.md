@@ -101,6 +101,8 @@ Arriba, ponele de nombre **Anotar gasto** y listo.
 | compré 100 dólares a 1450 | Ahorro: +US$ 100 (calcula solo $145.000) |
 | ahorré 300 dólares | Ahorro: +US$ 300 (sin monto en pesos) |
 | vendí 100 dólares a 1400 | Venta: −US$ 100 de tu cuenta, +$140.000 a tus pesos |
+| pagué la tarjeta 350 mil | **Pago del resumen**: se descuenta de tu plata y baja lo que debés |
+| cuánto debo de la tarjeta | Te dice tu plata, lo que debés en la tarjeta y más |
 | cuántos dólares tengo | Te dice cuánto ahorraste este mes y el saldo de tu cuenta en dólares |
 | cuánto llevo gastado | Te dice gastos, ingresos y qué fijos te faltan pagar |
 
@@ -122,6 +124,8 @@ Todo lo demás cuenta como **variable**.
 - **Dólares:** el saldo de tu cuenta en dólares, cuánto ahorraste y gastaste este mes, la cotización promedio a la que compraste, cuánto ahorraste en el año y un gráfico de cómo crece tu ahorro mes a mes.
 
 El saldo en dólares se calcula así: lo que tenías al empezar (en Ajustes) + dólares comprados + ingresos en dólares − gastos en dólares − dólares vendidos.
+
+**Tarjeta de crédito.** Los gastos en pesos con un medio de pago que diga "Crédito" (ej. *Crédito*, *Visa Crédito*) **no se descuentan de tu plata al anotarlos**: se juntan en la tarjeta. En el Resumen la tarjeta **💳 Tarjeta de crédito** muestra cuánto vas a pagar en el próximo resumen (estimado, con las cuotas del mes) y cuánto debés en total. Cuando pagás, tocás **Ya pagué la tarjeta** (o le decís a Siri *"pagué la tarjeta 350 mil"*) y recién ahí se descuenta de tu plata. Los gastos con crédito siguen contando en "en qué gastaste".
 
 **Fijos en dólares.** Al crear un gasto fijo elegís si **se paga en pesos o en dólares**. Tus suscripciones que salen de la cuenta en dólares (ej. ChatGPT, iCloud) van en dólares con medio de pago **Cuenta en dólares** y débito automático. En la pestaña Fijos se ven en dos grupos separados.
 

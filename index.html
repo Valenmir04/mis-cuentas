@@ -151,6 +151,18 @@ nav.tabs button.on svg{stroke-width:2.3}
 .tag.fijo{background:var(--navy-soft);color:var(--navy)}
 .tag.siri{background:var(--gold-soft);color:var(--gold)}
 .tag.auto{background:var(--green-soft);color:var(--green)}
+.tag.tarj{background:var(--bordo-soft);color:var(--bordo)}
+.hero .nota-pill{display:block;font-size:11.5px;opacity:.8;margin-top:2px}
+.tj-head{background:var(--bordo-soft);border-radius:16px;padding:16px;margin-bottom:14px}
+.tj-head small{display:block;font-size:12px;font-weight:600;color:var(--bordo)}
+.tj-head b{display:block;font-family:var(--display);font-size:30px;font-weight:600;color:var(--bordo);margin:2px 0 6px}
+.tj-head p{font-size:13px;color:var(--ink)}
+.tj-lista{display:flex;flex-direction:column;gap:2px;margin:6px 0 14px}
+.tj-item{display:grid;grid-template-columns:1fr auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.tj-item:last-child{border-bottom:0}
+.tj-item small{display:block;color:var(--muted);font-size:12px}
+.tj-item b{font-weight:600}
+.tj-tit{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em;text-transform:uppercase;margin-top:6px}
 
 /* ---------- Fijos ---------- */
 .fijos-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:12px}
@@ -373,7 +385,7 @@ function toast(msg, err) {
 
 /* ---------------- Ayudas sobre los datos ---------------- */
 const cats = tipo => (S.datos?.categorias || []).filter(c => !tipo || c.tipo === tipo);
-const CATS_ESPECIALES = { 'Ahorro': { nombre: 'Ahorro', emoji: '🐷', color: '#B8862F' }, 'Venta de dólares': { nombre: 'Venta de dólares', emoji: '💱', color: '#1F3A5F' } };
+const CATS_ESPECIALES = { 'Pago de tarjeta': { nombre: 'Pago de tarjeta', emoji: '💳', color: '#7A2E3A' }, 'Ahorro': { nombre: 'Ahorro', emoji: '🐷', color: '#B8862F' }, 'Venta de dólares': { nombre: 'Venta de dólares', emoji: '💱', color: '#1F3A5F' } };
 const catInfo = nombre => (S.datos?.categorias || []).find(c => c.nombre === nombre) || CATS_ESPECIALES[nombre] || { nombre, emoji: '📦', color: '#A39E93' };
 const medios = () => (S.datos?.medios || []).map(m => m.nombre);
 const movsDelMes = (mes = S.mes) => (S.datos?.movimientos || []).filter(m => m.mes === mes);
@@ -411,6 +423,35 @@ function render() {
 /* ---------------- Resumen ---------------- */
 const signoUSD = m => (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? 1 : -1;
 const sumaPesos = arr => arr.reduce((a, m) => a + (Number(m.pesos) || 0), 0);
+/* ---------- Tarjeta de crédito ---------- */
+const esCredito = medio => /cr[eé]dito/i.test(String(medio || ''));
+// Gasto en pesos con crédito: se suma a la tarjeta y se descuenta de tu plata recién cuando pagás el resumen
+const vaATarjeta = m => m.tipo === 'gasto' && m.moneda !== 'USD' && esCredito(m.medio);
+function infoTarjeta() {
+  const aj = S.datos?.ajustes || {};
+  const desde = aj.fechaInicialARS || '';
+  const movs = (S.datos?.movimientos || []).filter(m => m.fecha >= desde);
+  const consumos = movs.filter(vaATarjeta);
+  const pagos = movs.filter(m => m.tipo === 'pagoTarjeta').sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const deudaIni = Number(aj.deudaInicialTarjeta) || 0;
+  const deuda = deudaIni + suma(consumos) - suma(pagos);
+  const ultimoPago = pagos[pagos.length - 1] || null;
+  // Próximo resumen (estimado): lo comprado desde el último pago + la cuota de este mes de compras en cuotas anteriores
+  let proximo = pagos.length ? 0 : deudaIni;
+  const nuevos = [], cuotasViejas = [];
+  consumos.forEach(m => {
+    const n = Number(m.cuotas) || 1;
+    const pagadas = pagos.filter(p => p.fecha > m.fecha).length; // cada resumen pagado después de la compra = una cuota
+    if (pagadas < n) {
+      proximo += m.monto / n;
+      (pagadas === 0 ? nuevos : cuotasViejas).push({ ...m, cuotaNro: pagadas + 1, n });
+    }
+  });
+  proximo = Math.max(0, Math.min(proximo, deuda));
+  const hay = consumos.length || pagos.length || deudaIni;
+  return { deuda: Math.max(0, deuda), proximo, nuevos, cuotasViejas, ultimoPago, deudaIni, hay, tarjetas: medios().filter(esCredito) };
+}
+
 /** Plata disponible en pesos al cierre de un mes (o null si no cargaste el saldo inicial). */
 function saldoARSHasta(mes) {
   const aj = S.datos?.ajustes || {};
@@ -418,7 +459,8 @@ function saldoARSHasta(mes) {
   return (S.datos?.movimientos || []).filter(m => m.fecha >= aj.fechaInicialARS && m.mes <= mes).reduce((a, m) => {
     if (m.tipo === 'ahorro') return a - (Number(m.pesos) || 0);
     if (m.tipo === 'retiro') return a + (Number(m.pesos) || 0);
-    if (m.moneda === 'USD') return a;
+    if (m.tipo === 'pagoTarjeta') return a - (Number(m.monto) || 0);
+    if (m.moneda === 'USD' || vaATarjeta(m)) return a;
     return a + (m.tipo === 'ingreso' ? 1 : -1) * (Number(m.monto) || 0);
   }, Number(aj.saldoInicialARS) || 0);
 }
@@ -466,8 +508,11 @@ function resumenPesos() {
   const fijosEst = todosFijos.filter(e => e.f.moneda !== 'USD');
   const pagados = fijosEst.filter(e => e.pago).length;
   const pendientes = fijosEst.filter(e => !e.pago);
-  const falta = suma(pendientes.map(e => e.f));
-  const saldo = ingresos - gastos - ahorroPesos;
+  const falta = suma(pendientes.filter(e => !esCredito(e.f.medio)).map(e => e.f)); // los fijos con crédito van a la tarjeta
+  const enTarjetaMes = suma(gastosL.filter(vaATarjeta));
+  const pagosTarjetaMes = suma(movs.filter(m => m.tipo === 'pagoTarjeta'));
+  const tj = infoTarjeta();
+  const saldo = ingresos - (gastos - enTarjetaMes) - pagosTarjetaMes - ahorroPesos;
   const gFijos = suma(gastosL.filter(m => m.idFijo));
   const gVar = gastos - gFijos;
   const porCat = agrupar(gastosL, 'categoria');
@@ -505,13 +550,18 @@ function resumenPesos() {
       ${heroSub ? `<div class="sub">${esc(heroSub)}</div>` : ''}
       <div class="fila">
         <div class="pill">Ingresos ${tieneSaldo ? 'del mes' : ''}<b class="num">+${plata(ingresos)}</b></div>
-        <div class="pill">Gastos ${tieneSaldo ? 'del mes' : ''}<b class="num">−${plata(gastos)}</b></div>
+        <div class="pill">Gastos ${tieneSaldo ? 'del mes' : ''}<b class="num">−${plata(gastos)}</b>${enTarjetaMes ? `<span class="nota-pill">${plata(enTarjetaMes)} con crédito: van a la tarjeta</span>` : ''}</div>
+        ${pagosTarjetaMes ? `<div class="pill ancho">💳 Pagaste la tarjeta<b class="num">−${plata(pagosTarjetaMes)}</b></div>` : ''}
         ${ahorroPesos || ahorroUSD ? `<div class="pill ancho">🐷 Pasaste a ahorro<b class="num">${plata(ahorroPesos)} <span style="opacity:.75;font-weight:500">→ ${plata(ahorroUSD, 'USD')}</span></b></div>` : ''}
       </div>
     </div>
 
     <div class="minis">
       ${tarjetaPesos}
+      ${tj.hay || tj.tarjetas.length ? `<button class="card mini-usd" data-tarjeta="1">
+        <span class="em" style="background:var(--bordo-soft)">💳</span>
+        <span><small>Tarjeta de crédito · próximo resumen</small><b class="num ${tj.proximo ? 'c-bordo' : ''}">${plata(tj.proximo)}</b><small style="font-weight:500">${tj.deuda > tj.proximo + 0.5 ? `Debés ${plata(tj.deuda)} con cuotas futuras` : tj.deuda > 0.5 ? 'Es todo lo que debés' : 'No debés nada 🎉'}</small></span>
+        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>` : ''}
       <button class="card mini-usd" data-moneda="USD">
         <span class="em">🐷</span>
         <span><small>Tu cuenta en dólares</small><b class="num">${plata(saldoUSD, 'USD')}</b></span>
@@ -523,7 +573,7 @@ function resumenPesos() {
       <div class="card stat"><div class="lbl">Gastos fijos</div><div class="v num c-navy">${plata(gFijos)}</div><div class="s">${gastos ? Math.round(gFijos / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Gastos variables</div><div class="v num c-bordo">${plata(gVar)}</div><div class="s">${gastos ? Math.round(gVar / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Fijos pagados</div><div class="v num">${pagados}<span style="font-size:15px;color:var(--muted)"> / ${fijosEst.length}</span></div><div class="prog"><span style="width:${fijosEst.length ? pagados / fijosEst.length * 100 : 0}%"></span></div></div>
-      <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${base - falta < 0 ? 'c-bordo' : 'c-green'}">${plata(base - falta)}</div><div class="s">${pendientes.length ? `faltan ${plata(falta)} en fijos` : 'no te falta ningún fijo'}</div></div>
+      <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${base - falta - tj.proximo < 0 ? 'c-bordo' : 'c-green'}">${plata(base - falta - tj.proximo)}</div><div class="s">${[falta ? `fijos ${plata(falta)}` : '', tj.proximo ? `tarjeta ${plata(tj.proximo)}` : ''].filter(Boolean).join(' + ') || 'no te falta pagar nada'}</div></div>
     </div>
 
 
@@ -700,7 +750,7 @@ function renderMovimientos() {
     </form>
     <div class="ayuda">Ej: "gasté 8500 en el súper con débito" · "cobré 300 mil de freelance"</div>
     <div class="buscador"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="busca" placeholder="Buscar" value="${esc(S.busqueda)}"></div>
-    <div class="chips">${[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['ahorro', 'Ahorro'], ['dolares', 'En dólares'], ['fijo', 'Fijos'], ['variable', 'Variables']].map(([k, t]) => `<button class="chip ${S.filtro === k ? 'on' : ''}" data-filtro="${k}">${t}</button>`).join('')}</div>
+    <div class="chips">${[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['ahorro', 'Ahorro'], ['dolares', 'En dólares'], ['tarjeta', 'Tarjeta'], ['fijo', 'Fijos'], ['variable', 'Variables']].map(([k, t]) => `<button class="chip ${S.filtro === k ? 'on' : ''}" data-filtro="${k}">${t}</button>`).join('')}</div>
     <div id="listaMovs"></div>`;
   renderListaMovs();
 }
@@ -711,6 +761,7 @@ function renderListaMovs() {
     if (S.filtro === 'gasto' || S.filtro === 'ingreso') { if (m.tipo !== S.filtro) return false; }
     if (S.filtro === 'ahorro' && m.tipo !== 'ahorro' && m.tipo !== 'retiro') return false;
     if (S.filtro === 'dolares' && m.moneda !== 'USD') return false;
+    if (S.filtro === 'tarjeta' && !vaATarjeta(m) && m.tipo !== 'pagoTarjeta') return false;
     if (S.filtro === 'fijo' && !m.idFijo) return false;
     if (S.filtro === 'variable' && (m.idFijo || m.tipo !== 'gasto')) return false;
     if (q && !`${m.descripcion} ${m.categoria} ${m.medio}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q)) return false;
@@ -733,6 +784,13 @@ function renderListaMovs() {
 
 function filaMov(m) {
   const c = catInfo(m.categoria);
+  if (m.tipo === 'pagoTarjeta') {
+    return `<button class="mov" data-mov="${esc(m.id)}">
+      <span class="em" style="background:var(--bordo-soft)">💳</span>
+      <span style="min-width:0"><b>Pagaste la tarjeta</b><small>${m.origen === 'siri' ? '<span class="tag siri">SIRI</span> ' : ''}${esc(m.medio && !/^cr[eé]dito$/i.test(m.medio) ? m.medio + ' · ' : '')}Pago del resumen</small></span>
+      <span class="mt num neg">−${plata(m.monto)}</span>
+    </button>`;
+  }
   if (m.tipo === 'ahorro' || m.tipo === 'retiro') {
     const det = [m.pesos ? plata(m.pesos) + ' · a ' + plata(m.pesos / m.monto) + ' c/u' : '', m.medio !== 'Sin especificar' ? m.medio : ''].filter(Boolean).map(esc).join(' · ');
     return `<button class="mov" data-mov="${esc(m.id)}">
@@ -742,7 +800,7 @@ function filaMov(m) {
     </button>`;
   }
   const extra = [m.categoria, m.medio !== 'Sin especificar' ? m.medio : '', m.cuotas ? m.cuotas + ' cuotas' : ''].filter(Boolean).map(esc).join(' · ');
-  const tags = (m.idFijo ? '<span class="tag fijo">FIJO</span> ' : '') + (m.origen === 'siri' ? '<span class="tag siri">SIRI</span> ' : '') + (m.origen === 'débito automático' ? '<span class="tag auto">AUTO</span> ' : '');
+  const tags = (vaATarjeta(m) ? '<span class="tag tarj">TARJETA</span> ' : '') + (m.idFijo ? '<span class="tag fijo">FIJO</span> ' : '') + (m.origen === 'siri' ? '<span class="tag siri">SIRI</span> ' : '') + (m.origen === 'débito automático' ? '<span class="tag auto">AUTO</span> ' : '');
   return `<button class="mov" data-mov="${esc(m.id)}">
     <span class="em" style="background:${fondo(c.color)}">${esc(c.emoji || '•')}</span>
     <span style="min-width:0"><b>${esc(m.descripcion || m.categoria)}</b><small>${tags}${extra}</small></span>
@@ -827,7 +885,56 @@ function cerrarHoja() { $('#capa').classList.remove('on'); }
 
 function opciones(lista, sel) { return lista.map(o => `<option ${o === sel ? 'selected' : ''}>${esc(o)}</option>`).join(''); }
 
+function abrirTarjeta() {
+  const tj = infoTarjeta();
+  const fc = f => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
+  const item = m => `<div class="tj-item"><span><b>${esc(m.descripcion || m.categoria)}</b><small>${fc(m.fecha)}${m.n > 1 ? ` · cuota ${m.cuotaNro} de ${m.n} (total ${plata(m.monto)})` : ''}</small></span><span class="num" style="font-weight:600">${plata(m.monto / m.n)}</span></div>`;
+  abrirHoja(`
+    <h2>💳 Tarjeta de crédito</h2>
+    <div class="tj-head">
+      <small>Próximo resumen (estimado)</small>
+      <b class="num">${plata(tj.proximo)}</b>
+      <p>${tj.deuda > tj.proximo + 0.5 ? `En total debés <strong>${plata(tj.deuda)}</strong>, contando las cuotas que vienen. ` : ''}${tj.ultimoPago ? `Último pago: ${plata(tj.ultimoPago.monto)} el ${fc(tj.ultimoPago.fecha)}.` : 'Todavía no registraste ningún pago.'}</p>
+    </div>
+    <button class="btn prim full" id="tjPagar" ${tj.deuda > 0.5 ? '' : 'disabled'}>Ya pagué la tarjeta</button>
+    ${!tj.ultimoPago && tj.deudaIni ? `<div class="tj-tit" style="margin-top:16px">Pendiente de antes</div><div class="tj-lista"><div class="tj-item"><span><b>Resumen anterior</b><small>Lo que cargaste en Ajustes</small></span><span class="num" style="font-weight:600">${plata(tj.deudaIni)}</span></div></div>` : ''}
+    <div class="tj-tit" style="margin-top:16px">${tj.ultimoPago ? 'Compras desde el último pago' : 'Compras con crédito'}</div>
+    ${tj.nuevos.length ? `<div class="tj-lista">${tj.nuevos.sort((a, b) => b.fecha.localeCompare(a.fecha)).map(item).join('')}</div>` : '<p class="ayuda" style="margin:6px 0 14px">No hay compras nuevas con crédito.</p>'}
+    ${tj.cuotasViejas.length ? `<div class="tj-tit">Cuotas que siguen</div><div class="tj-lista">${tj.cuotasViejas.map(item).join('')}</div>` : ''}
+    <p class="ayuda" style="margin:0">Es un estimado: el monto exacto lo ves en el resumen del banco. Cuando pagues, poné lo que pagaste de verdad. Recién ahí se descuenta de tu plata.</p>`);
+  if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo || tj.deuda);
+}
+
+function abrirPagoTarjeta(mov, sugerido) {
+  const edit = !!mov;
+  const tarjetas = medios().filter(esCredito);
+  const num = v => v ? (+v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '';
+  abrirHoja(`
+    <h2>${edit ? 'Editar pago de tarjeta' : 'Pagué la tarjeta'}</h2>
+    <label class="campo"><span>¿Cuánto pagaste?</span><input class="monto-input num" id="ptMonto" inputmode="decimal" placeholder="$ 0" value="${num(edit ? mov.monto : Math.round(sugerido || 0))}"></label>
+    ${!edit && sugerido ? '<p class="calc">Te sugerimos el estimado. Si el resumen dice otra cosa, cambialo.</p>' : ''}
+    <div class="dos">
+      <label class="campo"><span>Fecha</span><input id="ptFecha" type="date" value="${esc(edit ? mov.fecha : hoyISO())}"></label>
+      ${tarjetas.length > 1 ? `<label class="campo"><span>Tarjeta</span><select id="ptTarjeta">${opciones(tarjetas, edit ? mov.medio : tarjetas[0])}</select></label>` : '<span></span>'}
+    </div>
+    <div class="acciones">${edit ? '<button class="btn peligro" id="ptBorrar">Borrar</button>' : '<button class="btn" data-cerrar>Cancelar</button>'}<button class="btn prim" id="ptOk">Guardar pago</button></div>`);
+  if (!edit) setTimeout(() => $('#ptMonto').select(), 250);
+  $('#ptOk').onclick = async () => {
+    const monto = leerMonto($('#ptMonto').value);
+    if (!monto) return toast('Poné cuánto pagaste', true);
+    const datos = { tipo: 'pagoTarjeta', monto, fecha: $('#ptFecha').value || hoyISO(), medio: $('#ptTarjeta') ? $('#ptTarjeta').value : (tarjetas[0] || 'Crédito'), descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', moneda: 'ARS' };
+    $('#ptOk').disabled = true;
+    try { await hacer(edit ? 'editar' : 'agregar', edit ? { id: mov.id, movimiento: datos } : { movimiento: datos }, edit ? 'Actualizado' : 'Pago de tarjeta guardado ✓ Se descontó de tu plata'); cerrarHoja(); }
+    catch (e) { $('#ptOk').disabled = false; }
+  };
+  if (edit) $('#ptBorrar').onclick = async () => {
+    if (!confirm('¿Borrar este pago de tarjeta?')) return;
+    cerrarHoja(); await hacer('borrar', { id: mov.id }, 'Borrado');
+  };
+}
+
 function abrirMovimiento(mov) {
+  if (mov && mov.tipo === 'pagoTarjeta') return abrirPagoTarjeta(mov);
   const edit = !!mov;
   const m = mov || { tipo: S.vista === 'resumen' && S.moneda === 'USD' ? 'ahorro' : 'gasto', moneda: 'ARS', fecha: S.mes === mesActual() ? hoyISO() : S.mes + '-01', medio: 'Sin especificar', categoria: '' };
   const esFijo = !!m.idFijo;
@@ -861,6 +968,7 @@ function abrirMovimiento(mov) {
       <label class="campo"><span>Fecha</span><input id="mFecha" type="date" value="${esc(m.fecha)}"></label>
       <label class="campo" id="campoMoneda"><span>Moneda</span><select id="mMoneda"><option value="ARS" ${m.moneda !== 'USD' ? 'selected' : ''}>Pesos</option><option value="USD" ${m.moneda === 'USD' ? 'selected' : ''}>Dólares</option></select></label>
     </div>
+    <div class="nota" id="notaCredito" hidden>💳 Va a la tarjeta: se descuenta de tu plata cuando pagues el resumen.</div>
     <label class="campo" id="campoCuotas"><span>Cuotas</span><input id="mCuotas" type="number" min="1" max="48" inputmode="numeric" placeholder="1" value="${m.cuotas || ''}"></label>
     <div class="acciones">${edit ? '<button class="btn peligro" id="mBorrar">Borrar</button>' : '<button class="btn" data-cerrar>Cancelar</button>'}<button class="btn prim" id="mOk">Guardar</button></div>`);
 
@@ -875,6 +983,7 @@ function abrirMovimiento(mov) {
     $('#gNormal').hidden = cambio(); $('#gCambio').hidden = !cambio();
     $('#campoCat').hidden = cambio(); $('#campoMoneda').hidden = cambio(); $('#campoDesc').hidden = cambio();
     $('#campoCuotas').hidden = cambio() || tipo !== 'gasto' || !/cr[eé]dito/i.test($('#mMedio').value);
+    $('#notaCredito').hidden = $('#campoCuotas').hidden || $('#mMoneda').value === 'USD';
     $('#mMonto').placeholder = $('#mMoneda').value === 'USD' ? 'US$ 0' : '$ 0';
     if (!cambio()) llenarCats();
     calcular();
@@ -1012,8 +1121,9 @@ function renderAjustes() {
         <h3>Tu plata en pesos</h3>
         <label class="campo"><span>¿Cuánta plata tenés disponible en pesos? (sumá cuenta del banco, billeteras y efectivo)</span><input id="aIniArs" class="num" inputmode="decimal" placeholder="$ 0" value="${S.datos?.ajustes?.fechaInicialARS ? (Number(S.datos.ajustes.saldoInicialARS) || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
         <label class="campo"><span>¿A qué fecha?</span><input id="aFechaArs" type="date" value="${esc(S.datos?.ajustes?.fechaInicialARS || hoyISO())}"></label>
+        <label class="campo"><span>💳 ¿Debés algo en la tarjeta de crédito que todavía no pagaste? (el resumen pendiente; si no, dejalo en 0)</span><input id="aDeudaTj" class="num" inputmode="decimal" placeholder="$ 0" value="${S.datos?.ajustes?.deudaInicialTarjeta ? (+S.datos.ajustes.deudaInicialTarjeta).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
         <button class="btn full" id="aGuardarIniArs" ${S.datos ? '' : 'disabled'}>Guardar</button>
-        <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Desde esa fecha se suman tus ingresos y se restan tus gastos y lo que pasás a dólares. Los movimientos anteriores a esa fecha no se cuentan, porque ya están incluidos en este saldo. Los gastos con tarjeta de crédito se descuentan el día que los anotás.</p>
+        <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Desde esa fecha se suman tus ingresos y se restan tus gastos y lo que pasás a dólares. Los movimientos anteriores a esa fecha no se cuentan, porque ya están incluidos en este saldo. Los gastos con tarjeta de crédito no se descuentan al anotarlos: se juntan en la tarjeta y se descuentan cuando pagás el resumen.</p>
       </div>
       <div class="card">
         <h3>Tu cuenta en dólares</h3>
@@ -1036,6 +1146,8 @@ function renderAjustes() {
           <div>gasté 20 dólares en ChatGPT</div>
           <div>cuántos dólares tengo</div>
           <div>cuánta plata me queda</div>
+          <div>pagué la tarjeta 350 mil</div>
+          <div>cuánto debo de la tarjeta</div>
           <div>cuánto llevo gastado</div>
         </div>
         <p class="ayuda" style="margin:12px 0 0">Las categorías, palabras clave y medios de pago se editan directo en la planilla (hojas "Categorías" y "Medios de pago").</p>
@@ -1046,7 +1158,7 @@ function renderAjustes() {
   $('#aGuardarIniArs').onclick = () => {
     const txt = $('#aIniArs').value.trim();
     if (!txt) return toast('Poné cuánta plata tenés en pesos (puede ser 0)', true);
-    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO() } }, 'Guardado ✓ Ya podés ver tu plata disponible en el Resumen');
+    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO(), deudaInicialTarjeta: leerMonto($('#aDeudaTj').value) } }, 'Guardado ✓ Ya podés ver tu plata disponible en el Resumen');
   };
   if ($('#aSalirDemo')) $('#aSalirDemo').onclick = () => { S.demo = false; S.datos = S.cfg ? guardado.get('mc_cache') : null; S.vista = 'resumen'; render(); if (S.cfg) refrescar(); };
   if ($('#aDesconectar')) $('#aDesconectar').onclick = () => {
@@ -1118,8 +1230,16 @@ function crearDemo() {
       add({ tipo: 'gasto', monto: r100(min + rnd() * (max - min)), fecha: f(1 + Math.floor(rnd() * ultimo)), descripcion, categoria, medio, cuotas: categoria.startsWith('Ropa') && medio === 'Crédito' ? 3 : '' });
     }
   }
+  // pagos de la tarjeta: el día 10 de cada mes se paga lo de crédito del mes anterior
+  for (let k = 4; k >= 0; k--) {
+    const d0 = new Date(hoy.getFullYear(), hoy.getMonth() - k, 1);
+    const mes = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}`, prev = moverMes(mes, -1);
+    if (k === 0 && hoy.getDate() < 10) continue;
+    const monto = r100(movs.filter(m => m.mes === prev && m.tipo === 'gasto' && m.moneda !== 'USD' && m.medio === 'Crédito').reduce((a, m) => a + m.monto / (Number(m.cuotas) || 1), 0));
+    if (monto) movs.push({ id: idr(), tipo: 'pagoTarjeta', monto, moneda: 'ARS', fecha: `${mes}-10`, mes, descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', medio: 'Crédito', cuotas: '', idFijo: '', origen: 'app', creado: '' });
+  }
   const d5 = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1);
-  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400, saldoInicialARS: 1800000, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` } };
+  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400, saldoInicialARS: 1800000, deudaInicialTarjeta: 0, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` } };
 }
 
 function demoApi(accion, x) {
@@ -1142,11 +1262,12 @@ function demoApi(accion, x) {
 
 /* ---------------- Eventos ---------------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-tab],[data-ir],[data-filtro],[data-mov],[data-pagar],[data-editfijo],[data-moneda],#nuevoFijo,#nuevoFijo2');
+  const t = e.target.closest('[data-tab],[data-ir],[data-filtro],[data-mov],[data-pagar],[data-editfijo],[data-moneda],[data-tarjeta],#nuevoFijo,#nuevoFijo2');
   if (!t) return;
   if (t.dataset.moneda) { S.moneda = t.dataset.moneda; guardado.set('mc_moneda', S.moneda); render(); window.scrollTo({ top: 0 }); return; }
   if (t.dataset.tab || t.dataset.ir) { S.vista = t.dataset.tab || t.dataset.ir; guardado.set('mc_vista', S.vista); render(); window.scrollTo({ top: 0 }); return; }
   if (t.dataset.filtro) { S.filtro = t.dataset.filtro; $$('[data-filtro]').forEach(c => c.classList.toggle('on', c === t)); renderListaMovs(); return; }
+  if (t.dataset.tarjeta) { abrirTarjeta(); return; }
   if (t.dataset.mov) { const m = S.datos.movimientos.find(x => x.id === t.dataset.mov); if (m) abrirMovimiento(m); return; }
   if (t.dataset.pagar) { alternarPago(t.dataset.pagar); return; }
   if (t.dataset.editfijo) { const f = S.datos.fijos.find(x => x.id === t.dataset.editfijo); if (f) abrirFijo(f); return; }

@@ -33,7 +33,8 @@ const ENCABEZADOS = {
 const AJUSTES_INICIALES = [
   ['saldoInicialUSD', 0, 'Dólares que ya tenías ahorrados antes de empezar a usar la app'],
   ['saldoInicialARS', 0, 'Pesos que tenías disponibles en la fecha de abajo'],
-  ['fechaInicialARS', '', 'Desde esta fecha se suman ingresos y se restan gastos en pesos (aaaa-mm-dd)']
+  ['fechaInicialARS', '', 'Desde esta fecha se suman ingresos y se restan gastos en pesos (aaaa-mm-dd)'],
+  ['deudaInicialTarjeta', 0, 'Lo que ya debías en la tarjeta de crédito en esa fecha (resumen sin pagar)']
 ];
 
 // Podés editar todo esto después directamente en la planilla.
@@ -230,10 +231,10 @@ function datos_() {
 
 function leerAjustes_() {
   const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJAS.AJU);
-  const res = { saldoInicialUSD: 0, saldoInicialARS: 0, fechaInicialARS: '' };
+  const res = { saldoInicialUSD: 0, saldoInicialARS: 0, fechaInicialARS: '', deudaInicialTarjeta: 0 };
   if (!h || h.getLastRow() < 2) return res;
   h.getRange(2, 1, h.getLastRow() - 1, 2).getValues().forEach(function (r) {
-    if (r[0] === 'saldoInicialUSD' || r[0] === 'saldoInicialARS') res[r[0]] = Number(String(r[1]).replace(',', '.')) || 0;
+    if (r[0] === 'saldoInicialUSD' || r[0] === 'saldoInicialARS' || r[0] === 'deudaInicialTarjeta') res[r[0]] = Number(String(r[1]).replace(',', '.')) || 0;
     if (r[0] === 'fechaInicialARS') res.fechaInicialARS = r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'yyyy-MM-dd') : String(r[1]).trim();
   });
   return res;
@@ -255,6 +256,27 @@ function guardarAjustes_(a) {
     const f = /^\d{4}-\d{2}-\d{2}$/.test(String(a.fechaInicialARS || '')) ? a.fechaInicialARS : hoy_();
     poner('fechaInicialARS', f);
   }
+  if (a.deudaInicialTarjeta !== undefined) poner('deudaInicialTarjeta', Math.abs(Number(a.deudaInicialTarjeta)) || 0);
+}
+
+/* ---------- Tarjeta de crédito ---------- */
+
+/** ¿Este medio de pago es una tarjeta de crédito? ("Crédito", "Visa Crédito", "Master crédito"…) */
+function esCredito_(medio) { return /cr[eé]dito/i.test(String(medio || '')); }
+
+/** Gasto en pesos con tarjeta de crédito: se suma a la tarjeta y no a tu plata hasta que pagás el resumen. */
+function vaATarjeta_(m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && esCredito_(m.medio); }
+
+/** Lo que debés en total en la tarjeta (con todas las cuotas que faltan). */
+function deudaTarjeta_(movs, ajustes) {
+  ajustes = ajustes || leerAjustes_();
+  const desde = ajustes.fechaInicialARS || '';
+  return movs.reduce(function (a, m) {
+    if (m.fecha < desde) return a;
+    if (vaATarjeta_(m)) return a + m.monto;
+    if (m.tipo === 'pagoTarjeta') return a - m.monto;
+    return a;
+  }, ajustes.deudaInicialTarjeta || 0);
 }
 
 /** Plata disponible en pesos: saldo inicial + ingresos y ventas de USD − gastos y compras de USD (desde la fecha inicial). */
@@ -265,7 +287,8 @@ function saldoARS_(movs, ajustes) {
     if (m.fecha < ajustes.fechaInicialARS) return a;
     if (m.tipo === 'ahorro') return a - (m.pesos || 0);
     if (m.tipo === 'retiro') return a + (m.pesos || 0);
-    if (m.moneda === 'USD') return a;
+    if (m.tipo === 'pagoTarjeta') return a - m.monto;
+    if (m.moneda === 'USD' || vaATarjeta_(m)) return a; // lo de la tarjeta se descuenta cuando pagás el resumen
     return a + (m.tipo === 'ingreso' ? m.monto : -m.monto);
   }, ajustes.saldoInicialARS);
 }
@@ -356,9 +379,10 @@ function normalizarMov_(m) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) fecha = hoy_();
   const tipo = TIPOS.indexOf(m.tipo) >= 0 ? m.tipo : 'gasto';
   const cambio = tipo === 'ahorro' || tipo === 'retiro'; // compra / venta de dólares
-  const moneda = (cambio || m.moneda === 'USD') ? 'USD' : 'ARS';
-  const catDefecto = { gasto: 'Otros', ingreso: 'Otros ingresos', ahorro: 'Ahorro', retiro: 'Venta de dólares' }[tipo];
-  let medio = String(m.medio || 'Sin especificar');
+  const pagoT = tipo === 'pagoTarjeta';                   // pago del resumen de la tarjeta
+  const moneda = pagoT ? 'ARS' : (cambio || m.moneda === 'USD') ? 'USD' : 'ARS';
+  const catDefecto = { gasto: 'Otros', ingreso: 'Otros ingresos', ahorro: 'Ahorro', retiro: 'Venta de dólares', pagoTarjeta: 'Pago de tarjeta' }[tipo];
+  let medio = String(m.medio || (pagoT ? 'Crédito' : 'Sin especificar'));
   if (moneda === 'USD' && !cambio && medio === 'Sin especificar') medio = 'Cuenta en dólares';
   return {
     id: m.id || '',
@@ -367,11 +391,11 @@ function normalizarMov_(m) {
     tipo: tipo,
     monto: Math.abs(Number(m.monto)) || 0,
     moneda: moneda,
-    descripcion: String(m.descripcion || (tipo === 'ahorro' ? 'Compra de dólares' : tipo === 'retiro' ? 'Venta de dólares' : '')).slice(0, 200),
-    categoria: cambio ? catDefecto : String(m.categoria || catDefecto),
+    descripcion: String(m.descripcion || (tipo === 'ahorro' ? 'Compra de dólares' : tipo === 'retiro' ? 'Venta de dólares' : pagoT ? 'Pago de tarjeta' : '')).slice(0, 200),
+    categoria: (cambio || pagoT) ? catDefecto : String(m.categoria || catDefecto),
     medio: medio,
-    cuotas: !cambio && Number(m.cuotas) > 1 ? Number(m.cuotas) : '',
-    idFijo: cambio ? '' : (m.idFijo || ''),
+    cuotas: !cambio && !pagoT && Number(m.cuotas) > 1 ? Number(m.cuotas) : '',
+    idFijo: (cambio || pagoT) ? '' : (m.idFijo || ''),
     origen: m.origen || '',
     creado: m.creado || '',
     pesos: cambio ? (Math.abs(Number(m.pesos)) || 0) : ''
@@ -520,7 +544,8 @@ function procesarTexto_(texto, origen, tipoForzado) {
     const p = pagarFijo_(r.fijo.id, r.fecha.slice(0, 7), r.monto || r.fijo.monto, r.fecha, origen,
       { medio: r.medio !== 'Sin especificar' ? r.medio : '' });
     if (p.yaEstaba) return { ok: true, mensaje: r.fijo.nombre + ' ya estaba marcado como pagado este mes.' };
-    return { ok: true, mensaje: 'Listo. Marqué ' + r.fijo.nombre + ' como pagado: ' + fmtMonto_(p.mov.monto, p.mov.moneda) + '.' };
+    return { ok: true, mensaje: 'Listo. Marqué ' + r.fijo.nombre + ' como pagado: ' + fmtMonto_(p.mov.monto, p.mov.moneda) + '.' +
+      (vaATarjeta_(p.mov) ? ' Como fue con crédito, va a la tarjeta.' : '') };
   }
 
   const mov = agregarMov_({
@@ -528,6 +553,12 @@ function procesarTexto_(texto, origen, tipoForzado) {
     categoria: r.categoria, medio: r.medio, cuotas: r.cuotas, pesos: r.pesos
   }, origen);
   let mensaje = mensajeAnotado_(mov, ctx.hoy);
+  if (mov.tipo === 'pagoTarjeta') {
+    const queda = deudaTarjeta_(leer_('MOV'));
+    mensaje += queda > 0.5 ? ' En la tarjeta te quedan ' + fmtMonto_(queda, 'ARS') + ' por pagar, contando cuotas futuras.' : ' Ya no debés nada en la tarjeta.';
+  } else if (vaATarjeta_(mov)) {
+    mensaje += ' Va a la tarjeta: se descuenta de tu plata cuando pagues el resumen.';
+  }
   if (r.fijoParecido) {
     const mes = r.fecha.slice(0, 7);
     const pagado = leer_('MOV').some(function (m) { return m.idFijo === r.fijoParecido.id && m.mes === mes; });
@@ -539,6 +570,7 @@ function procesarTexto_(texto, origen, tipoForzado) {
 
 function mensajeAnotado_(m, hoy) {
   const delDia = m.fecha !== hoy ? ', del ' + Number(m.fecha.slice(8, 10)) + '/' + Number(m.fecha.slice(5, 7)) : '';
+  if (m.tipo === 'pagoTarjeta') return 'Anotado: pagaste ' + fmtMonto_(m.monto, 'ARS') + ' de la tarjeta' + (norm_(m.medio) !== 'credito' ? ' ' + m.medio : '') + delDia + '. Ya se descontó de tu plata.';
   if (m.tipo === 'ahorro' || m.tipo === 'retiro') {
     let c = (m.tipo === 'ahorro' ? 'Anotado: ahorraste ' : 'Anotado: vendiste ') + fmtMonto_(m.monto, 'USD');
     if (m.pesos) c += (m.tipo === 'ahorro' ? ' por ' : ' y recibiste ') + fmtMonto_(m.pesos, 'ARS') + ' (a ' + fmtMonto_(m.pesos / m.monto, 'ARS') + ' cada dólar)';
@@ -567,6 +599,8 @@ function resumenParaSiri_(ctx) {
   let s = 'En lo que va del mes gastaste ' + fmtMonto_(suma('gasto'), 'ARS') + ' e ingresaste ' + fmtMonto_(suma('ingreso'), 'ARS') + '. ';
   const disponible = saldoARS_(leer_('MOV'));
   if (disponible !== null) s += 'Tenés disponibles ' + (disponible < 0 ? 'menos ' : '') + fmtMonto_(disponible, 'ARS') + ' en pesos. ';
+  const deuda = deudaTarjeta_(leer_('MOV'));
+  if (deuda > 0.5) s += 'En la tarjeta de crédito debés ' + fmtMonto_(deuda, 'ARS') + ', contando cuotas futuras. ';
   s += 'En dólares: ' + (ahorroUSD ? 'este mes ahorraste ' + fmtMonto_(ahorroUSD, 'USD') + ', ' : '') +
     (gastoUSD ? 'gastaste ' + fmtMonto_(gastoUSD, 'USD') + ', ' : '') + 'y tu cuenta tiene ' + fmtMonto_(saldo, 'USD') + '. ';
   if (!ctx.fijos.some(function (f) { return f.activo; })) return s;
@@ -604,8 +638,25 @@ function interpretar_(texto, ctx) {
     return lista.length;
   };
 
+  // ¿Pagaste la tarjeta? ("pagué la tarjeta 350 mil", "pagué el resumen de la visa 420.000")
+  if (ctx.tipoForzado !== 'ingreso' && /\b(pague|pagamos|abone|cancele)\s+(?:el\s+|la\s+|mi\s+)?(resumen|tarjeta|visa|master|mastercard|amex)\b/.test(t)) {
+    const ms = buscarMontos_(t);
+    if (!ms.length) return { error: 'Decime cuánto pagaste de la tarjeta. Por ejemplo: pagué la tarjeta 350 mil.' };
+    const tarjetas = (ctx.medios || []).filter(function (md) { return esCredito_(md.nombre); });
+    let tarjeta = tarjetas.filter(function (md) {
+      return clavesDe_(md).some(function (k) { return k !== 'credito' && k !== 'tarjeta de credito' && new RegExp('\\b' + escRe_(k) + '\\b').test(t); });
+    })[0] || tarjetas[0];
+    let fechaP = ctx.hoy;
+    if (/\b(antes de ayer|anteayer)\b/.test(t)) fechaP = sumarDias_(ctx.hoy, -2);
+    else if (/\bayer\b/.test(t)) fechaP = sumarDias_(ctx.hoy, -1);
+    return {
+      tipo: 'pagoTarjeta', monto: ms.reduce(function (x, y) { return y.v > x.v ? y : x; }).v, moneda: 'ARS', fecha: fechaP, cuotas: '',
+      medio: tarjeta ? tarjeta.nombre : 'Crédito', categoria: 'Pago de tarjeta', descripcion: 'Pago de tarjeta', fijo: null
+    };
+  }
+
   // ¿Es una pregunta?
-  if (/\bcuanto (llevo|gaste|gastamos|gasto|va|vamos|tengo|ahorre|ahorrado|me queda|queda)\b|\bcuantos (dolares|pesos)\b|\bcuanta plata\b|\bcomo vengo\b|\bresumen\b/.test(t)) return { consulta: true };
+  if (/\bcuanto (llevo|debo|gaste|gastamos|gasto|va|vamos|tengo|ahorre|ahorrado|me queda|queda)\b|\bcuantos (dolares|pesos)\b|\bcuanta plata\b|\bcuanto (le )?debo\b|\bcomo vengo\b|\bresumen\b/.test(t)) return { consulta: true };
 
   // ¿Compra o venta de dólares? ("compré 200 dólares a 1.250.000", "ahorré 300 dólares", "vendí 100 dólares a 1400")
   const DOL = '(?:dolares|dolar|usd|verdes|u\\$s|us\\$)';
@@ -758,7 +809,7 @@ function interpretarCambio_(original, t, tipo, ctx) {
   };
 }
 
-const TIPOS = ['gasto', 'ingreso', 'ahorro', 'retiro'];
+const TIPOS = ['gasto', 'ingreso', 'ahorro', 'retiro', 'pagoTarjeta'];
 
 // Valor de cada palabra numérica (sin tildes)
 const VALOR_PALABRA = {
