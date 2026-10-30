@@ -86,6 +86,7 @@ nav.tabs button.on svg{stroke-width:2.3}
 .hero .lbl{font-size:13px;opacity:.8;font-weight:500}
 .hero .big{font-family:var(--display);font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:4px 0 14px}
 .hero .fila{display:flex;gap:10px;flex-wrap:wrap}
+.hero .sub{font-size:13px;opacity:.8;margin-bottom:14px;position:relative;z-index:1}
 .hero .pill{background:rgba(255,255,255,.12);border-radius:12px;padding:8px 12px;font-size:13px;flex:1;min-width:130px}
 .hero .pill b{display:block;font-size:16px;font-weight:600;margin-top:1px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero{background:#24453B}}
@@ -242,7 +243,7 @@ nav.tabs button.on svg{stroke-width:2.3}
 .mini-usd b{font-family:var(--display);font-size:20px;font-weight:600}
 .mini-usd svg{color:var(--muted)}
 .minis{display:grid;gap:12px}
-@media (min-width:640px){.minis{grid-template-columns:1fr 1fr}}
+@media (min-width:640px){.minis{grid-template-columns:1fr 1fr}.minis:has(> :only-child){grid-template-columns:1fr}}
 .mov .mt.ahorro{color:var(--gold)}
 .calc{font-size:13px;color:var(--muted);text-align:center;margin:-4px 0 12px}
 .calc b{color:var(--ink)}
@@ -476,12 +477,16 @@ function resumenPesos() {
   const antesDeEmpezar = aj.fechaInicialARS && S.mes < aj.fechaInicialARS.slice(0, 7);
   const saldoARS = antesDeEmpezar ? null : saldoARSHasta(S.mes);
   const fechaCorta = f => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
-  const tarjetaPesos = saldoARS !== null
-    ? `<button class="card mini-usd" data-ir="ajustes">
-        <span class="em" style="background:var(--green-soft)">💵</span>
-        <span><small>${S.mes === mesActual() ? 'Tenés disponible en pesos' : 'Pesos al cierre del mes'}</small><b class="num ${saldoARS < 0 ? 'c-bordo' : ''}">${plata(saldoARS)}</b><small style="font-weight:500">desde el ${fechaCorta(aj.fechaInicialARS)}</small></span>
-        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>`
-    : `<button class="card mini-usd" data-ir="ajustes">
+  const tieneSaldo = saldoARS !== null;
+  const nombreMes = labelMes(S.mes).split(' ')[0].toLowerCase();
+  const mesInicio = tieneSaldo && S.mes === aj.fechaInicialARS.slice(0, 7);
+  const inicioMes = tieneSaldo ? (mesInicio ? Number(aj.saldoInicialARS) || 0 : saldoARSHasta(moverMes(S.mes, -1))) : 0;
+  const base = tieneSaldo ? saldoARS : saldo; // lo que te queda de verdad
+  const heroLbl = !tieneSaldo ? 'Te queda este mes' : S.mes === mesActual() ? 'Te queda este mes' : (S.mes > mesActual() ? 'Te quedaría en ' : 'Te quedó al cierre de ') + nombreMes;
+  const heroSub = !tieneSaldo ? '' : mesInicio
+    ? `Arrancaste el ${fechaCorta(aj.fechaInicialARS)} con ${plata(inicioMes)}${aj.fechaInicialARS.slice(8, 10) !== '01' ? ' · lo anotado antes de esa fecha ya está incluido' : ''}`
+    : `Empezaste ${nombreMes} con ${plata(inicioMes)}`;
+  const tarjetaPesos = tieneSaldo ? '' : `<button class="card mini-usd" data-ir="ajustes">
         <span class="em" style="background:var(--green-soft)">💵</span>
         <span><small>${antesDeEmpezar ? 'Tus pesos' : 'Plata disponible en pesos'}</small><b style="font-size:15px;font-family:var(--font)">${antesDeEmpezar ? 'Empezaste a contar el ' + fechaCorta(aj.fechaInicialARS) : 'Cargá cuánto tenés hoy'}</b></span>
         <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>`;
@@ -495,11 +500,12 @@ function resumenPesos() {
   v.innerHTML = `
   <div class="grid">
     <div class="card hero">
-      <div class="lbl">Te queda este mes</div>
-      <div class="big num">${plata(saldo)}</div>
+      <div class="lbl">${heroLbl}</div>
+      <div class="big num" ${heroSub ? 'style="margin-bottom:4px"' : ''}>${plata(base)}</div>
+      ${heroSub ? `<div class="sub">${esc(heroSub)}</div>` : ''}
       <div class="fila">
-        <div class="pill">Ingresos<b class="num">${plata(ingresos)}</b></div>
-        <div class="pill">Gastos<b class="num">${plata(gastos)}</b></div>
+        <div class="pill">Ingresos ${tieneSaldo ? 'del mes' : ''}<b class="num">+${plata(ingresos)}</b></div>
+        <div class="pill">Gastos ${tieneSaldo ? 'del mes' : ''}<b class="num">−${plata(gastos)}</b></div>
         ${ahorroPesos || ahorroUSD ? `<div class="pill ancho">🐷 Pasaste a ahorro<b class="num">${plata(ahorroPesos)} <span style="opacity:.75;font-weight:500">→ ${plata(ahorroUSD, 'USD')}</span></b></div>` : ''}
       </div>
     </div>
@@ -517,7 +523,7 @@ function resumenPesos() {
       <div class="card stat"><div class="lbl">Gastos fijos</div><div class="v num c-navy">${plata(gFijos)}</div><div class="s">${gastos ? Math.round(gFijos / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Gastos variables</div><div class="v num c-bordo">${plata(gVar)}</div><div class="s">${gastos ? Math.round(gVar / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Fijos pagados</div><div class="v num">${pagados}<span style="font-size:15px;color:var(--muted)"> / ${fijosEst.length}</span></div><div class="prog"><span style="width:${fijosEst.length ? pagados / fijosEst.length * 100 : 0}%"></span></div></div>
-      <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${saldo - falta < 0 ? 'c-bordo' : 'c-green'}">${plata(saldo - falta)}</div><div class="s">${pendientes.length ? `faltan ${plata(falta)} en fijos` : 'no te falta ningún fijo'}</div></div>
+      <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${base - falta < 0 ? 'c-bordo' : 'c-green'}">${plata(base - falta)}</div><div class="s">${pendientes.length ? `faltan ${plata(falta)} en fijos` : 'no te falta ningún fijo'}</div></div>
     </div>
 
 
@@ -1113,7 +1119,7 @@ function crearDemo() {
     }
   }
   const d5 = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1);
-  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400, saldoInicialARS: 850000, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` } };
+  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: { saldoInicialUSD: 2400, saldoInicialARS: 1800000, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` } };
 }
 
 function demoApi(accion, x) {
