@@ -12,6 +12,16 @@ Mi app personal para llevar al día gastos, ingresos, **ahorros en dólares** y 
 
 **Todo es gratis.** No hace falta saber programar: son 4 pasos de copiar y pegar (unos 20 minutos).
 
+## Qué tiene la app
+
+- **Configuración inicial:** la primera vez que entrás te pregunta cuánta plata tenés en pesos, si tenés cuenta en dólares, en qué moneda ahorrás y tus tarjetas de crédito. Se puede repetir desde **Ajustes**.
+- **Resumen:** cuánto te queda, ingresos y gastos del mes, fijos y variables, en qué se fue la plata, tarjetas y vencimientos.
+- **Cuenta en dólares** (opcional): para gastos que salen en dólares, como suscripciones.
+- **🐷 Ahorros:** pestaña propia con ahorros en dólares, en pesos o en las dos monedas. Muestra el total en la moneda que elijas, cuánto ahorraste en el mes y en el año, la cotización promedio y cómo crecen.
+- **💳 Varias tarjetas de crédito**, cada una con su cierre y vencimiento. Lo que comprás con crédito se descuenta de tu plata cuando pagás el resumen.
+- **🎙️ Siri** y **tus propias frases**: por ejemplo, "bondi" → Transporte, SUBE, $1.000.
+- **Modo claro / oscuro** e **instalación como app** en iPhone y Android (la app te muestra cómo).
+
 ---
 
 ## Paso 1 · Crear la planilla (Google Sheets)
@@ -103,6 +113,10 @@ Arriba, ponele de nombre **Anotar gasto** y listo.
 | vendí 100 dólares a 1400 | Venta: −US$ 100 de tu cuenta, +$140.000 a tus pesos |
 | pagué la tarjeta 350 mil | **Pago del resumen**: se descuenta de tu plata y baja lo que debés |
 | cuánto debo de la tarjeta | Te dice tu plata, lo que debés en la tarjeta y más |
+| ahorré 50 mil pesos | Ahorro en pesos |
+| pasé 100 dólares de la cuenta en dólares a ahorros | De la cuenta en dólares a tus ahorros |
+| saqué 30 mil de ahorros | Sacás plata de tus ahorros y vuelve a tu cuenta |
+| pagué la visa 300 mil | Pago del resumen de esa tarjeta |
 | cuántos dólares tengo | Te dice cuánto ahorraste este mes y el saldo de tu cuenta en dólares |
 | cuánto llevo gastado | Te dice gastos, ingresos y qué fijos te faltan pagar |
 

@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Mis Cuentas">
 <title>Mis Cuentas</title>
+<link rel="manifest" href="manifest.json">
+<script>try{var t=JSON.parse(localStorage.getItem('mc_tema'));if(t==='claro')document.documentElement.dataset.theme='light';if(t==='oscuro')document.documentElement.dataset.theme='dark'}catch(e){}</script>
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232F5D50'/%3E%3Ctext x='32' y='45' font-size='36' text-anchor='middle' fill='%23F6F1E7' font-family='Georgia'%3E$%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +34,12 @@
     --navy:#93B3DE; --navy-soft:#1C2939; --gold:#E2B864; --gold-soft:#372D1C;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25); color-scheme:dark;
   }
+}
+:root[data-theme="dark"]{
+  --bg:#121715; --surface:#1A211E; --surface-2:#232C28; --ink:#ECE7DC; --muted:#99A19C; --line:#2C3632;
+  --green:#82BBA7; --green-soft:#1D312A; --bordo:#E48C99; --bordo-soft:#3A2228;
+  --navy:#93B3DE; --navy-soft:#1C2939; --gold:#E2B864; --gold-soft:#372D1C;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25); color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
@@ -262,6 +270,48 @@ nav.tabs button.on svg{stroke-width:2.3}
 .grupo-mon{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:10px}
 .grupo-mon .prog{margin-top:6px}
 .grupo-mon small{font-size:12px;color:var(--muted);font-weight:600}
+:root[data-theme="dark"] .hero{background:#24453B}
+:root[data-theme="dark"] .hero.navy{background:#22344D}
+.hero.dorado{background:#8A6420}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero.dorado{background:#4F3D17}}
+:root[data-theme="dark"] .hero.dorado{background:#4F3D17}
+.hero .pill.boton{text-align:left;color:inherit;cursor:pointer;transition:background .15s}
+.hero .pill.boton:hover{background:rgba(255,255,255,.2)}
+.hero .pill.boton b{font-size:14px}
+.seg.seg-claro{background:rgba(255,255,255,.12);border-color:transparent;position:relative;z-index:1}
+.seg.seg-claro button{color:rgba(255,255,255,.75)}
+.seg.seg-claro button.on{background:rgba(255,255,255,.9);color:#3a2c0e}
+.seg.tres{grid-template-columns:repeat(3,1fr)}
+.seg.tres button.on,#cMoneda button.on,#cOrigen button.on,#wUsd button.on,#wTj button.on,#frTipo button.on[data-v="gasto"],#frTipo button.on[data-v="ingreso"]{background:var(--ink);color:var(--bg)}
+#cOrigen button{font-size:13px}
+.bolsillo{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding:14px 16px}
+.bolsillo .em{width:40px;height:40px;border-radius:13px;background:var(--surface-2);display:grid;place-items:center;font-size:19px}
+.bolsillo small{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.bolsillo b{font-family:var(--display);font-size:20px;font-weight:600}
+.checks{display:flex;gap:10px;margin-bottom:12px}
+.check-op{flex:1;display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;font-weight:600;cursor:pointer}
+.check-op input{width:18px;height:18px;accent-color:var(--green)}
+.lista-simple{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.fila-simple{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+.fila-simple:last-child{border-bottom:0}
+.fila-simple b{display:block;font-weight:600}
+.fila-simple small{display:block;color:var(--muted);font-size:12.5px}
+.fila-simple svg{color:var(--muted)}
+details.ejemplos{margin-top:14px}
+details.ejemplos summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--green)}
+.wiz h1{font-size:28px}
+.wiz .card{margin-bottom:14px}
+.wiz-puntos{display:flex;gap:6px;margin-bottom:18px}
+.wiz-puntos i{flex:1;height:5px;border-radius:99px;background:var(--line)}
+.wiz-puntos i.on{background:var(--green)}
+.tj-mini-form{margin-top:12px}
+ol.pasos{padding-left:0;list-style:none;counter-reset:p;margin:0 0 14px}
+ol.pasos li{counter-increment:p;position:relative;padding:10px 0 10px 40px;border-bottom:1px solid var(--line);font-size:14.5px}
+ol.pasos li:last-child{border-bottom:0}
+ol.pasos li::before{content:counter(p);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;background:var(--green);color:var(--bg);display:grid;place-items:center;font-size:13px;font-weight:700}
+.ico-txt{display:inline-block;padding:0 5px;border:1px solid var(--line);border-radius:6px;font-size:12px}
+nav.tabs button{min-width:0;flex:1;padding:6px 2px}
+@media (min-width:820px){nav.tabs button{flex:0 0 auto;padding:9px 16px}}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -280,6 +330,7 @@ nav.tabs button.on svg{stroke-width:2.3}
     <button data-tab="resumen"><svg class="i" viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>Resumen</button>
     <button data-tab="movimientos"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Movimientos</button>
     <button data-tab="fijos"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M16 2v4M8 2v4M3 10h18M9 15.5l2 2 4-4"/></svg>Fijos</button>
+    <button data-tab="ahorros"><svg class="i" viewBox="0 0 24 24"><path d="M19 9.5c-.6-2.9-3.4-5-7-5-4.1 0-7.5 2.7-7.5 6.5 0 2 1 3.8 2.6 5V19h3v-1.6c.6.1 1.2.1 1.9.1s1.3 0 1.9-.1V19h3v-2.6c1-.7 1.8-1.7 2.2-2.9H21v-4h-2z"/><path d="M15.5 10.5h.01M9 7.5h4"/></svg>Ahorros</button>
     <button data-tab="ajustes"><svg class="i" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Ajustes</button>
   </nav>
 
@@ -293,6 +344,7 @@ nav.tabs button.on svg{stroke-width:2.3}
     <section class="vista" id="v-resumen"></section>
     <section class="vista" id="v-movimientos" hidden></section>
     <section class="vista" id="v-fijos" hidden></section>
+    <section class="vista" id="v-ahorros" hidden></section>
     <section class="vista" id="v-ajustes" hidden></section>
   </main>
 </div>
@@ -337,6 +389,9 @@ const S = {
   vista: guardado.get('mc_vista') || 'resumen',
   filtro: 'todos',
   moneda: guardado.get('mc_moneda') || 'ARS',
+  verAhorroEn: guardado.get('mc_verahorro') || '',
+  wiz: null,
+  forzarWizard: false,
   busqueda: '',
   graficos: []
 };
@@ -385,7 +440,7 @@ function toast(msg, err) {
 
 /* ---------------- Ayudas sobre los datos ---------------- */
 const cats = tipo => (S.datos?.categorias || []).filter(c => !tipo || c.tipo === tipo);
-const CATS_ESPECIALES = { 'Pago de tarjeta': { nombre: 'Pago de tarjeta', emoji: '💳', color: '#7A2E3A' }, 'Ahorro': { nombre: 'Ahorro', emoji: '🐷', color: '#B8862F' }, 'Venta de dólares': { nombre: 'Venta de dólares', emoji: '💱', color: '#1F3A5F' } };
+const CATS_ESPECIALES = { 'Pago de tarjeta': { nombre: 'Pago de tarjeta', emoji: '💳', color: '#7A2E3A' }, 'Ahorro': { nombre: 'Ahorro', emoji: '🐷', color: '#B8862F' }, 'Venta de dólares': { nombre: 'Venta de dólares', emoji: '💱', color: '#1F3A5F' }, 'Retiro de ahorros': { nombre: 'Retiro de ahorros', emoji: '↩︎', color: '#1F3A5F' } };
 const catInfo = nombre => (S.datos?.categorias || []).find(c => c.nombre === nombre) || CATS_ESPECIALES[nombre] || { nombre, emoji: '📦', color: '#A39E93' };
 const medios = () => (S.datos?.medios || []).map(m => m.nombre);
 const movsDelMes = (mes = S.mes) => (S.datos?.movimientos || []).filter(m => m.mes === mes);
@@ -407,6 +462,7 @@ function estadoFijos(mes = S.mes) {
 /* ---------------- Render principal ---------------- */
 function render() {
   if (!S.cfg && !S.demo) return renderBienvenida();
+  if (S.datos && !S.demo && (S.forzarWizard || !AJ().configurado)) return renderWizard();
   $('#bienvenida').hidden = true; $('#app').hidden = false; $('#fab').hidden = false;
   $('#mesLabel').textContent = labelMes(S.mes);
   $('#demoBadge').hidden = !S.demo;
@@ -417,51 +473,122 @@ function render() {
   S.graficos.forEach(g => g.destroy()); S.graficos = [];
   if (S.vista === 'ajustes') return renderAjustes();
   if (!S.datos) { $('#v-' + S.vista).innerHTML = '<div class="esqueleto"></div><div class="esqueleto"></div>'; return; }
-  ({ resumen: renderResumen, movimientos: renderMovimientos, fijos: renderFijos })[S.vista]();
+  (({ resumen: renderResumen, movimientos: renderMovimientos, fijos: renderFijos, ahorros: renderAhorros })[S.vista] || renderResumen)();
 }
 
-/* ---------------- Resumen ---------------- */
-const signoUSD = m => (m.tipo === 'ingreso' || m.tipo === 'ahorro') ? 1 : -1;
-const sumaPesos = arr => arr.reduce((a, m) => a + (Number(m.pesos) || 0), 0);
-/* ---------- Tarjeta de crédito ---------- */
-const esCredito = medio => /cr[eé]dito/i.test(String(medio || ''));
-// Gasto en pesos con crédito: se suma a la tarjeta y se descuenta de tu plata recién cuando pagás el resumen
-const vaATarjeta = m => m.tipo === 'gasto' && m.moneda !== 'USD' && esCredito(m.medio);
+/* ---------------- Núcleo (es el mismo código que usa la planilla) ---------------- */
+/* ==== NÚCLEO COMPARTIDO (igual en Codigo.gs y en index.html) ==== */
+
+/** Ajustes con valores por defecto y migración desde versiones anteriores. */
+function completarAjustes(aj) {
+  aj = aj || {};
+  var n = function (v) { return Number(String(v === undefined || v === null ? '' : v).replace(',', '.')) || 0; };
+  var lista = function (v) {
+    if (Array.isArray(v)) return v;
+    try { var x = JSON.parse(v || '[]'); return Array.isArray(x) ? x : []; } catch (e) { return []; }
+  };
+  var tiene = function (k) { return aj[k] !== undefined && aj[k] !== null && aj[k] !== ''; };
+  var r = {
+    configurado: tiene('configurado') ? (aj.configurado === true || aj.configurado === 'si') : !!aj.fechaInicialARS,
+    saldoInicialARS: n(aj.saldoInicialARS),
+    fechaInicialARS: String(aj.fechaInicialARS || ''),
+    cuentaUSD: tiene('cuentaUSD') ? (aj.cuentaUSD === true || aj.cuentaUSD === 'si') : true,
+    saldoInicialCuentaUSD: n(aj.saldoInicialCuentaUSD),
+    // antes "saldoInicialUSD" era lo que tenías ahorrado en dólares
+    saldoInicialAhorroUSD: tiene('saldoInicialAhorroUSD') ? n(aj.saldoInicialAhorroUSD) : n(aj.saldoInicialUSD),
+    saldoInicialAhorroARS: n(aj.saldoInicialAhorroARS),
+    ahorroMonedas: tiene('ahorroMonedas') ? String(aj.ahorroMonedas).split(',').filter(function (x) { return x === 'ARS' || x === 'USD'; }) : ['USD'],
+    cotizacionReferencia: n(aj.cotizacionReferencia),
+    tarjetas: lista(aj.tarjetas),
+    frases: lista(aj.frases)
+  };
+  if (!r.ahorroMonedas.length) r.ahorroMonedas = ['USD'];
+  // una sola tarjeta configurada con la versión anterior
+  if (!tiene('tarjetas') && n(aj.cierreTarjeta)) {
+    r.tarjetas = [{ id: 't1', nombre: 'Crédito', cierre: n(aj.cierreTarjeta), vence: n(aj.vencimientoTarjeta),
+      deudaInicial: n(aj.deudaInicialTarjeta), consumosIniciales: n(aj.consumosInicialesTarjeta), fecha: String(aj.fechaTarjeta || aj.fechaInicialARS || '') }];
+  }
+  return r;
+}
+
+function normSimple(s) {
+  return String(s === null || s === undefined ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** ¿A qué tarjeta corresponde este medio de pago? Devuelve la tarjeta o null si no es crédito. */
+function tarjetaDeMedio(medio, tarjetas) {
+  var m = normSimple(medio);
+  if (!m) return null;
+  for (var i = 0; i < tarjetas.length; i++) if (normSimple(tarjetas[i].nombre) === m) return tarjetas[i];
+  if (/credito/.test(m)) return tarjetas[0] || { id: '_', nombre: 'Crédito', cierre: 0 };
+  return null;
+}
+
+/** Gasto en pesos con tarjeta de crédito: va a la tarjeta y se descuenta de tu plata recién cuando pagás el resumen. */
+function vaATarjetaCon(m, tarjetas) { return m.tipo === 'gasto' && m.moneda !== 'USD' && !!tarjetaDeMedio(m.medio, tarjetas); }
+
+/** Todas las tarjetas a mostrar: las configuradas, o una genérica si usás "Crédito" sin haber configurado ninguna. */
+function tarjetasActivas(movs, aj) {
+  if (aj.tarjetas.length) return aj.tarjetas;
+  var usa = movs.some(function (m) { return (m.tipo === 'pagoTarjeta' || vaATarjetaCon(m, [])); });
+  return usa ? [{ id: '_', nombre: 'Crédito', cierre: 0 }] : [];
+}
+
 /**
- * Estado de la tarjeta de crédito por resúmenes. Cada resumen ("ciclo") se identifica por el mes en que cierra (aaaa-mm).
- * Una compra va al resumen que cierra en la primera fecha de cierre igual o posterior a la compra; la cuota k va k-1 resúmenes después.
- * Los pagos se aplican primero a los resúmenes más viejos. Devuelve null si no configuraste el día de cierre.
+ * Estado de UNA tarjeta. Con día de cierre: por resúmenes (cada compra va al resumen que cierra primero; cada cuota, un resumen después).
+ * Sin día de cierre: estimado simple. Los pagos se aplican primero a lo más viejo.
  */
-function calcularTarjeta(movs, aj, hoy) {
+function calcularTarjeta(movs, card, hoy, tarjetas) {
   var pad = function (n) { return ('0' + n).slice(-2); };
   var mover = function (mes, n) { var t = +mes.slice(0, 4) * 12 + (+mes.slice(5, 7) - 1) + n; return Math.floor(t / 12) + '-' + pad(t % 12 + 1); };
   var dias = function (mes) { return new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5, 7), 0)).getUTCDate(); };
-  var C = Math.min(31, Math.max(0, Math.round(Number(aj.cierreTarjeta) || 0)));
-  if (!C) return null;
-  var V = Math.min(31, Math.max(1, Math.round(Number(aj.vencimientoTarjeta) || 0) || Math.min(31, C + 10)));
+  var lista = tarjetas && tarjetas.length ? tarjetas : [card];
+  var esDeEsta = function (m) { var t = tarjetaDeMedio(m.medio, lista); return !!t && (t.id === card.id || normSimple(t.nombre) === normSimple(card.nombre)); };
+  var desde = card.fecha || '';
+  var ms = movs.filter(function (m) { return m.fecha >= desde; });
+  var compras = ms.filter(function (m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && esDeEsta(m); });
+  var pagos = ms.filter(function (m) { return m.tipo === 'pagoTarjeta' && esDeEsta(m); })
+    .sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
+  var dIni = Number(card.deudaInicial) || 0, cIni = Number(card.consumosIniciales) || 0;
+  var totalPagos = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
+  var base = { card: card, nombre: card.nombre, ultimoPago: pagos[pagos.length - 1] || null };
+  var C = Math.min(31, Math.max(0, Math.round(Number(card.cierre) || 0)));
+
+  if (!C) {
+    // Sin cierre: próximo pago = lo comprado desde el último pago + cuotas que siguen
+    var deuda0 = dIni + cIni + compras.reduce(function (a, m) { return a + m.monto; }, 0) - totalPagos;
+    var prox = pagos.length ? 0 : dIni + cIni, nuevos = [], viejas = [];
+    compras.forEach(function (m) {
+      var n = Math.max(1, Number(m.cuotas) || 1);
+      var pagadas = pagos.filter(function (p) { return p.fecha > m.fecha; }).length;
+      if (pagadas < n) {
+        prox += m.monto / n;
+        (pagadas === 0 ? nuevos : viejas).push({ id: m.id, descripcion: m.descripcion || m.categoria, fecha: m.fecha, monto: m.monto, n: n, cuotaNro: pagadas + 1 });
+      }
+    });
+    base.conCiclos = false; base.deuda = Math.max(0, deuda0); base.proximo = Math.max(0, Math.min(prox, deuda0));
+    base.nuevos = nuevos; base.cuotasViejas = viejas; base.deudaIni = dIni + cIni;
+    return base;
+  }
+
+  var V = Math.min(31, Math.max(1, Math.round(Number(card.vence) || 0) || Math.min(31, C + 10)));
   var cierre = function (ciclo) { return ciclo + '-' + pad(Math.min(C, dias(ciclo))); };
   var vence = function (ciclo) { var mv = V > C ? ciclo : mover(ciclo, 1); return mv + '-' + pad(Math.min(V, dias(mv))); };
   var cicloDe = function (f) { var mes = f.slice(0, 7); return f <= cierre(mes) ? mes : mover(mes, 1); };
-  var esCred = function (m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && /cr[eé]dito/i.test(String(m.medio || '')); };
-  var desde = aj.fechaTarjeta || aj.fechaInicialARS || '';
-  var ms = movs.filter(function (m) { return m.fecha >= desde; });
-  var pagos = ms.filter(function (m) { return m.tipo === 'pagoTarjeta'; }).sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
   var ciclos = {};
   var add = function (ciclo, monto, item) {
     if (!ciclos[ciclo]) ciclos[ciclo] = { ciclo: ciclo, monto: 0, items: [] };
-    ciclos[ciclo].monto += monto;
-    ciclos[ciclo].items.push(item);
+    ciclos[ciclo].monto += monto; ciclos[ciclo].items.push(item);
   };
   var cicloIni = cicloDe(desde || hoy);
-  var dIni = Number(aj.deudaInicialTarjeta) || 0, cIni = Number(aj.consumosInicialesTarjeta) || 0;
   if (dIni) add(mover(cicloIni, -1), dIni, { descripcion: 'Resumen que ya había cerrado', fecha: desde, monto: dIni, n: 1, cuotaNro: 1, inicial: true });
   if (cIni) add(cicloIni, cIni, { descripcion: 'Consumos que ya tenías', fecha: desde, monto: cIni, n: 1, cuotaNro: 1, inicial: true });
-  ms.filter(esCred).forEach(function (m) {
+  compras.forEach(function (m) {
     var n = Math.max(1, Number(m.cuotas) || 1), c0 = cicloDe(m.fecha);
     for (var k = 0; k < n; k++) add(mover(c0, k), m.monto / n, { id: m.id, descripcion: m.descripcion || m.categoria, fecha: m.fecha, monto: m.monto, n: n, cuotaNro: k + 1 });
   });
-  var resto = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
-  var lista = Object.keys(ciclos).sort().map(function (k) {
+  var resto = totalPagos;
+  var todos = Object.keys(ciclos).sort().map(function (k) {
     var c = ciclos[k];
     c.pagado = Math.min(resto, c.monto); resto -= c.pagado;
     c.pendiente = c.monto - c.pagado; c.cierra = cierre(c.ciclo); c.vence = vence(c.ciclo);
@@ -469,75 +596,88 @@ function calcularTarjeta(movs, aj, hoy) {
   });
   var abierto = cicloDe(hoy);
   var actual = ciclos[abierto] || { ciclo: abierto, monto: 0, items: [], pagado: 0, pendiente: 0, cierra: cierre(abierto), vence: vence(abierto) };
-  var cerrados = lista.filter(function (c) { return c.ciclo < abierto && c.pendiente > 0.5; });
-  var futuros = lista.filter(function (c) { return c.ciclo > abierto && c.pendiente > 0.5; });
+  var cerrados = todos.filter(function (c) { return c.ciclo < abierto && c.pendiente > 0.5; });
+  var futuros = todos.filter(function (c) { return c.ciclo > abierto && c.pendiente > 0.5; });
   var sumaP = function (l) { return l.reduce(function (a, c) { return a + c.pendiente; }, 0); };
   var aPagar = sumaP(cerrados);
-  return {
-    conCiclos: true, cerrados: cerrados, aPagar: aPagar,
-    venceCerrado: cerrados.length ? cerrados[cerrados.length - 1].vence : "",
-    vencido: cerrados.some(function (c) { return c.vence < hoy; }),
-    actual: actual, futuros: futuros, enCuotasFuturas: sumaP(futuros),
-    deuda: aPagar + actual.pendiente + sumaP(futuros),
-    proximo: aPagar > 0.5 ? aPagar : actual.pendiente,
-    ultimoPago: pagos[pagos.length - 1] || null,
-    fechaCierre: cierre, fechaVence: vence, cicloDe: cicloDe
-  };
+  base.conCiclos = true; base.cerrados = cerrados; base.aPagar = aPagar;
+  base.venceCerrado = cerrados.length ? cerrados[cerrados.length - 1].vence : '';
+  base.vencido = cerrados.some(function (c) { return c.vence < hoy; });
+  base.actual = actual; base.futuros = futuros; base.enCuotasFuturas = sumaP(futuros);
+  base.deuda = aPagar + actual.pendiente + sumaP(futuros);
+  base.proximo = aPagar > 0.5 ? aPagar : actual.pendiente;
+  base.fechaCierre = cierre; base.fechaVence = vence; base.cicloDe = cicloDe;
+  return base;
 }
 
-
-function infoTarjeta() {
-  const aj = S.datos?.ajustes || {};
-  const tarjetas = medios().filter(esCredito);
-  const est = calcularTarjeta(S.datos?.movimientos || [], aj, hoyISO());
-  if (est) return { ...est, hay: true, tarjetas };
-  const desde = aj.fechaTarjeta || aj.fechaInicialARS || '';
-  const movs = (S.datos?.movimientos || []).filter(m => m.fecha >= desde);
-  const consumos = movs.filter(vaATarjeta);
-  const pagos = movs.filter(m => m.tipo === 'pagoTarjeta').sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const deudaIni = (Number(aj.deudaInicialTarjeta) || 0) + (Number(aj.consumosInicialesTarjeta) || 0);
-  const deuda = deudaIni + suma(consumos) - suma(pagos);
-  const ultimoPago = pagos[pagos.length - 1] || null;
-  // Próximo resumen (estimado): lo comprado desde el último pago + la cuota de este mes de compras en cuotas anteriores
-  let proximo = pagos.length ? 0 : deudaIni;
-  const nuevos = [], cuotasViejas = [];
-  consumos.forEach(m => {
-    const n = Number(m.cuotas) || 1;
-    const pagadas = pagos.filter(p => p.fecha > m.fecha).length; // cada resumen pagado después de la compra = una cuota
-    if (pagadas < n) {
-      proximo += m.monto / n;
-      (pagadas === 0 ? nuevos : cuotasViejas).push({ ...m, cuotaNro: pagadas + 1, n });
+/**
+ * Saldos al cierre de un mes (hasta = 'aaaa-mm', o vacío = todo):
+ *  ars: cuenta en pesos (null si no cargaste el saldo inicial) · usd: cuenta en dólares
+ *  ahorroUSD / ahorroARS: ahorros. Si no tenés cuenta en dólares, lo que gastás/cobrás en dólares sale/entra de tus ahorros en dólares.
+ */
+function calcularSaldos(movs, aj, hasta) {
+  var tarjetas = aj.tarjetas || [];
+  var s = { ars: aj.fechaInicialARS ? aj.saldoInicialARS : null, usd: aj.saldoInicialCuentaUSD, ahorroUSD: aj.saldoInicialAhorroUSD, ahorroARS: aj.saldoInicialAhorroARS };
+  movs.forEach(function (m) {
+    if (hasta && m.mes > hasta) return;
+    var enArs = s.ars !== null && m.fecha >= aj.fechaInicialARS;
+    var dePesos = function (v) { if (enArs) s.ars += v; };
+    var deUSD = function (v) { if (aj.cuentaUSD) s.usd += v; else s.ahorroUSD += v; };
+    var cuentaUSD = m.cuenta === 'USD';
+    if (m.tipo === 'ahorro' || m.tipo === 'retiro') {
+      var sg = m.tipo === 'ahorro' ? 1 : -1;
+      if (m.moneda === 'ARS') { s.ahorroARS += sg * m.monto; dePesos(-sg * m.monto); return; }
+      s.ahorroUSD += sg * m.monto;
+      if (cuentaUSD) { if (aj.cuentaUSD) s.usd -= sg * m.monto; }
+      else dePesos(-sg * (m.pesos || 0));
+      return;
     }
+    if (m.tipo === 'pagoTarjeta') { dePesos(-m.monto); return; }
+    var signo = m.tipo === 'ingreso' ? 1 : -1;
+    if (m.moneda === 'USD') { deUSD(signo * m.monto); return; }
+    if (vaATarjetaCon(m, tarjetas)) return; // se descuenta cuando pagás el resumen
+    dePesos(signo * m.monto);
   });
-  proximo = Math.max(0, Math.min(proximo, deuda));
-  const hay = consumos.length || pagos.length || deudaIni;
-  return { deuda: Math.max(0, deuda), proximo, nuevos, cuotasViejas, ultimoPago, deudaIni, hay, tarjetas: medios().filter(esCredito) };
+  return s;
+}
+/* ==== FIN NÚCLEO ==== */
+
+/* ---------------- Ayudas de cuentas, ahorros y tarjetas ---------------- */
+const AJ = () => completarAjustes(S.datos?.ajustes);
+const tarjetasCfg = () => AJ().tarjetas;
+const esCredito = medio => !!tarjetaDeMedio(medio, tarjetasCfg());
+const vaATarjeta = m => vaATarjetaCon(m, tarjetasCfg());
+const saldosHasta = mes => calcularSaldos(S.datos?.movimientos || [], AJ(), mes);
+const fc = f => f ? `${+f.slice(8, 10)}/${+f.slice(5, 7)}` : '';
+const esAhorroMov = m => m.tipo === 'ahorro' || m.tipo === 'retiro';
+// pesos que salen (ahorro) o entran (retiro) de la cuenta en pesos con este movimiento de ahorros
+const pesosDe = m => m.cuenta === 'USD' ? 0 : m.moneda === 'ARS' ? (Number(m.monto) || 0) : (Number(m.pesos) || 0);
+const sumaPesos = arr => arr.reduce((a, m) => a + pesosDe(m), 0);
+const flecha = '<svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+
+function infoTarjetas() {
+  const aj = AJ(), movs = S.datos?.movimientos || [];
+  return tarjetasActivas(movs, aj).map(card => calcularTarjeta(movs, card, hoyISO(), aj.tarjetas));
 }
 
-/** Plata disponible en pesos al cierre de un mes (o null si no cargaste el saldo inicial). */
-function saldoARSHasta(mes) {
-  const aj = S.datos?.ajustes || {};
-  if (!aj.fechaInicialARS) return null;
-  return (S.datos?.movimientos || []).filter(m => m.fecha >= aj.fechaInicialARS && m.mes <= mes).reduce((a, m) => {
-    if (m.tipo === 'ahorro') return a - (Number(m.pesos) || 0);
-    if (m.tipo === 'retiro') return a + (Number(m.pesos) || 0);
-    if (m.tipo === 'pagoTarjeta') return a - (Number(m.monto) || 0);
-    if (m.moneda === 'USD' || vaATarjeta(m)) return a;
-    return a + (m.tipo === 'ingreso' ? 1 : -1) * (Number(m.monto) || 0);
-  }, Number(aj.saldoInicialARS) || 0);
-}
-function saldoUSDHasta(mes) {
-  const ini = Number(S.datos?.ajustes?.saldoInicialUSD) || 0;
-  return (S.datos?.movimientos || []).filter(m => m.moneda === 'USD' && m.mes <= mes)
-    .reduce((a, m) => a + signoUSD(m) * (Number(m.monto) || 0), ini);
+/** Cotización para pasar dólares a pesos: la de Ajustes o la de tu última compra de dólares. */
+function cotizacion() {
+  const ref = AJ().cotizacionReferencia;
+  if (ref) return { v: ref, origen: 'la que cargaste en Ajustes' };
+  const ult = (S.datos?.movimientos || []).filter(m => m.tipo === 'ahorro' && m.moneda === 'USD' && m.cuenta !== 'USD' && m.pesos > 0)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+  return ult ? { v: ult.pesos / ult.monto, origen: `la de tu última compra (${fc(ult.fecha)})` } : null;
 }
 
+/* ---------------- Resumen ---------------- */
 function renderResumen() {
+  const aj = AJ();
+  if (!aj.cuentaUSD) S.moneda = 'ARS';
   $('#v-resumen').innerHTML = `
-    <div class="seg seg-moneda">
+    ${aj.cuentaUSD ? `<div class="seg seg-moneda">
       <button data-moneda="ARS" class="${S.moneda === 'ARS' ? 'on' : ''}">🇦🇷 Pesos</button>
       <button data-moneda="USD" class="${S.moneda === 'USD' ? 'on' : ''}">🇺🇸 Dólares</button>
-    </div>
+    </div>` : ''}
     <div id="resumenCuerpo"></div>`;
   S.moneda === 'USD' ? resumenDolares() : resumenPesos();
 }
@@ -558,12 +698,36 @@ function listaVencimientos(pend, vacio) {
       <div class="mt num">${plata(e.f.monto, e.f.moneda)}</div></div>`).join('')}</div>`;
 }
 
+/** Tarjetita de una tarjeta de crédito para el Resumen. */
+function miniTarjeta(tj) {
+  const multi = tarjetasCfg().length > 1;
+  const nom = multi ? tj.nombre : 'Tarjeta';
+  let cuerpo;
+  if (tj.conCiclos) {
+    cuerpo = tj.aPagar > 0.5
+      ? `<span><small>${esc(nom)} · ${tj.vencido ? '<span class="c-bordo">venció el ' + fc(tj.venceCerrado) + '</span>' : 'vence el ' + fc(tj.venceCerrado)}</small><b class="num c-bordo">${plata(tj.aPagar)}</b><small style="font-weight:500">Resumen en curso: ${plata(tj.actual.pendiente)} · cierra el ${fc(tj.actual.cierra)}</small></span>`
+      : `<span><small>${esc(nom)} · resumen en curso</small><b class="num">${plata(tj.actual.pendiente)}</b><small style="font-weight:500">Cierra el ${fc(tj.actual.cierra)} · vence el ${fc(tj.actual.vence)}</small></span>`;
+  } else {
+    cuerpo = `<span><small>${esc(multi ? tj.nombre : 'Tarjeta de crédito')} · próximo pago</small><b class="num ${tj.proximo ? 'c-bordo' : ''}">${plata(tj.proximo)}</b><small style="font-weight:500">${tj.deuda > 0.5 ? `Debés ${plata(tj.deuda)}` : 'No debés nada 🎉'} · <u>cargá cierre y vencimiento</u></small></span>`;
+  }
+  return `<button class="card mini-usd" data-tarjeta="${esc(tj.card.id)}"><span class="em" style="background:var(--bordo-soft)">💳</span>${cuerpo}${flecha}</button>`;
+}
+
+function miniAhorros(sal) {
+  const aj = AJ();
+  const partes = [];
+  if (aj.ahorroMonedas.includes('USD') || sal.ahorroUSD) partes.push(plata(sal.ahorroUSD, 'USD'));
+  if (aj.ahorroMonedas.includes('ARS') || sal.ahorroARS) partes.push(plata(sal.ahorroARS));
+  return `<button class="card mini-usd" data-tab="ahorros"><span class="em">🐷</span><span><small>Tus ahorros</small><b class="num">${partes.join(' · ')}</b></span>${flecha}</button>`;
+}
+
 function resumenPesos() {
+  const aj = AJ();
   const movs = movsDelMes();
-  const ars = movs.filter(m => m.moneda !== 'USD');
-  const compras = movs.filter(m => m.tipo === 'ahorro'), ventas = movs.filter(m => m.tipo === 'retiro');
-  const ahorroPesos = sumaPesos(compras), ahorroUSD = suma(compras);
-  const ingresos = suma(ars.filter(m => m.tipo === 'ingreso')) + sumaPesos(ventas);
+  const ars = movs.filter(m => m.moneda !== 'USD' && !esAhorroMov(m));
+  const aAhorro = movs.filter(m => m.tipo === 'ahorro' && m.cuenta !== 'USD'), deAhorro = movs.filter(m => m.tipo === 'retiro' && m.cuenta !== 'USD');
+  const ahorroPesos = sumaPesos(aAhorro), ahorroUSDMes = suma(aAhorro.filter(m => m.moneda === 'USD'));
+  const ingresos = suma(ars.filter(m => m.tipo === 'ingreso')) + sumaPesos(deAhorro);
   const gastosL = ars.filter(m => m.tipo === 'gasto');
   const gastos = suma(gastosL);
   const todosFijos = estadoFijos();
@@ -573,34 +737,31 @@ function resumenPesos() {
   const falta = suma(pendientes.filter(e => !esCredito(e.f.medio)).map(e => e.f)); // los fijos con crédito van a la tarjeta
   const enTarjetaMes = suma(gastosL.filter(vaATarjeta));
   const pagosTarjetaMes = suma(movs.filter(m => m.tipo === 'pagoTarjeta'));
-  const tj = infoTarjeta();
-  const fc = f => f ? `${+f.slice(8, 10)}/${+f.slice(5, 7)}` : "";
+  const tjs = infoTarjetas();
+  const proxTarjetas = tjs.reduce((a, t) => a + (t.proximo || 0), 0);
   const saldo = ingresos - (gastos - enTarjetaMes) - pagosTarjetaMes - ahorroPesos;
   const gFijos = suma(gastosL.filter(m => m.idFijo));
   const gVar = gastos - gFijos;
   const porCat = agrupar(gastosL, 'categoria');
   const porMedio = agrupar(gastosL, 'medio');
-  const saldoUSD = saldoUSDHasta(S.mes);
-  const aj = S.datos.ajustes || {};
+  const sal = saldosHasta(S.mes);
   const antesDeEmpezar = aj.fechaInicialARS && S.mes < aj.fechaInicialARS.slice(0, 7);
-  const saldoARS = antesDeEmpezar ? null : saldoARSHasta(S.mes);
-  const fechaCorta = f => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
+  const saldoARS = antesDeEmpezar ? null : sal.ars;
   const tieneSaldo = saldoARS !== null;
   const nombreMes = labelMes(S.mes).split(' ')[0].toLowerCase();
   const mesInicio = tieneSaldo && S.mes === aj.fechaInicialARS.slice(0, 7);
-  const inicioMes = tieneSaldo ? (mesInicio ? Number(aj.saldoInicialARS) || 0 : saldoARSHasta(moverMes(S.mes, -1))) : 0;
+  const inicioMes = tieneSaldo ? (mesInicio ? aj.saldoInicialARS : saldosHasta(moverMes(S.mes, -1)).ars) : 0;
   const base = tieneSaldo ? saldoARS : saldo; // lo que te queda de verdad
-  const heroLbl = !tieneSaldo ? 'Te queda este mes' : S.mes === mesActual() ? 'Te queda este mes' : (S.mes > mesActual() ? 'Te quedaría en ' : 'Te quedó al cierre de ') + nombreMes;
+  const heroLbl = !tieneSaldo || S.mes === mesActual() ? 'Te queda este mes' : (S.mes > mesActual() ? 'Te quedaría en ' : 'Te quedó al cierre de ') + nombreMes;
   const heroSub = !tieneSaldo ? '' : mesInicio
-    ? `Arrancaste el ${fechaCorta(aj.fechaInicialARS)} con ${plata(inicioMes)}${aj.fechaInicialARS.slice(8, 10) !== '01' ? ' · lo anotado antes de esa fecha ya está incluido' : ''}`
+    ? `Arrancaste el ${fc(aj.fechaInicialARS)} con ${plata(inicioMes)}${aj.fechaInicialARS.slice(8, 10) !== '01' ? ' · lo anotado antes de esa fecha ya está incluido' : ''}`
     : `Empezaste ${nombreMes} con ${plata(inicioMes)}`;
   const tarjetaPesos = tieneSaldo ? '' : `<button class="card mini-usd" data-ir="ajustes">
         <span class="em" style="background:var(--green-soft)">💵</span>
-        <span><small>${antesDeEmpezar ? 'Tus pesos' : 'Plata disponible en pesos'}</small><b style="font-size:15px;font-family:var(--font)">${antesDeEmpezar ? 'Empezaste a contar el ' + fechaCorta(aj.fechaInicialARS) : 'Cargá cuánto tenés hoy'}</b></span>
-        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>`;
+        <span><small>${antesDeEmpezar ? 'Tus pesos' : 'Plata disponible en pesos'}</small><b style="font-size:15px;font-family:var(--font)">${antesDeEmpezar ? 'Empezaste a contar el ' + fc(aj.fechaInicialARS) : 'Cargá cuánto tenés hoy'}</b></span>${flecha}</button>`;
 
   const v = $('#resumenCuerpo');
-  if (!movs.length && !todosFijos.length) {
+  if (!movs.length && !todosFijos.length && !tieneSaldo) {
     v.innerHTML = `<div class="card vacio"><div class="em">🌱</div><b>Todavía no hay nada en ${esc(labelMes(S.mes))}</b>Decile a Siri "gasté 5000 en el súper con débito" o tocá el botón + para cargar tu primer movimiento.</div>`;
     return;
   }
@@ -615,33 +776,23 @@ function resumenPesos() {
         <div class="pill">Ingresos ${tieneSaldo ? 'del mes' : ''}<b class="num">+${plata(ingresos)}</b></div>
         <div class="pill">Gastos ${tieneSaldo ? 'del mes' : ''}<b class="num">−${plata(gastos)}</b>${enTarjetaMes ? `<span class="nota-pill">${plata(enTarjetaMes)} con crédito: van a la tarjeta</span>` : ''}</div>
         ${pagosTarjetaMes ? `<div class="pill ancho">💳 Pagaste la tarjeta<b class="num">−${plata(pagosTarjetaMes)}</b></div>` : ''}
-        ${ahorroPesos || ahorroUSD ? `<div class="pill ancho">🐷 Pasaste a ahorro<b class="num">${plata(ahorroPesos)} <span style="opacity:.75;font-weight:500">→ ${plata(ahorroUSD, 'USD')}</span></b></div>` : ''}
+        ${ahorroPesos ? `<div class="pill ancho">🐷 Pasaste a ahorros<b class="num">${plata(ahorroPesos)}${ahorroUSDMes ? ` <span style="opacity:.75;font-weight:500">→ ${plata(ahorroUSDMes, 'USD')}</span>` : ''}</b></div>` : ''}
       </div>
     </div>
 
     <div class="minis">
       ${tarjetaPesos}
-      ${tj.hay || tj.tarjetas.length ? `<button class="card mini-usd" data-tarjeta="1">
-        <span class="em" style="background:var(--bordo-soft)">💳</span>
-        ${tj.conCiclos ? (tj.aPagar > 0.5
-          ? `<span><small>Tarjeta · ${tj.vencido ? '<span class="c-bordo">venció el ' + fc(tj.venceCerrado) + '</span>' : 'vence el ' + fc(tj.venceCerrado)}</small><b class="num c-bordo">${plata(tj.aPagar)}</b><small style="font-weight:500">Resumen en curso: ${plata(tj.actual.pendiente)} · cierra el ${fc(tj.actual.cierra)}</small></span>`
-          : `<span><small>Tarjeta · resumen en curso</small><b class="num">${plata(tj.actual.pendiente)}</b><small style="font-weight:500">Cierra el ${fc(tj.actual.cierra)} · vence el ${fc(tj.actual.vence)}</small></span>`)
-        : `<span><small>Tarjeta de crédito · próximo resumen</small><b class="num ${tj.proximo ? 'c-bordo' : ''}">${plata(tj.proximo)}</b><small style="font-weight:500">${tj.deuda > tj.proximo + 0.5 ? `Debés ${plata(tj.deuda)} con cuotas futuras` : tj.deuda > 0.5 ? 'Es todo lo que debés' : 'No debés nada 🎉'} · <u>configurá el cierre</u></small></span>`}
-        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>` : ''}
-      <button class="card mini-usd" data-moneda="USD">
-        <span class="em">🐷</span>
-        <span><small>Tu cuenta en dólares</small><b class="num">${plata(saldoUSD, 'USD')}</b></span>
-        <svg class="i" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
+      ${tjs.map(miniTarjeta).join('')}
+      ${miniAhorros(sal)}
+      ${aj.cuentaUSD ? `<button class="card mini-usd" data-moneda="USD"><span class="em" style="background:var(--navy-soft)">🇺🇸</span><span><small>Cuenta en dólares</small><b class="num">${plata(sal.usd, 'USD')}</b></span>${flecha}</button>` : ''}
     </div>
 
     <div class="stats">
       <div class="card stat"><div class="lbl">Gastos fijos</div><div class="v num c-navy">${plata(gFijos)}</div><div class="s">${gastos ? Math.round(gFijos / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Gastos variables</div><div class="v num c-bordo">${plata(gVar)}</div><div class="s">${gastos ? Math.round(gVar / gastos * 100) : 0}% del total</div></div>
       <div class="card stat"><div class="lbl">Fijos pagados</div><div class="v num">${pagados}<span style="font-size:15px;color:var(--muted)"> / ${fijosEst.length}</span></div><div class="prog"><span style="width:${fijosEst.length ? pagados / fijosEst.length * 100 : 0}%"></span></div></div>
-      <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${base - falta - tj.proximo < 0 ? 'c-bordo' : 'c-green'}">${plata(base - falta - tj.proximo)}</div><div class="s">${[falta ? `fijos ${plata(falta)}` : '', tj.proximo ? `tarjeta ${plata(tj.proximo)}` : ''].filter(Boolean).join(' + ') || 'no te falta pagar nada'}</div></div>
+      <div class="card stat"><div class="lbl">Si pagás lo que falta</div><div class="v num ${base - falta - proxTarjetas < 0 ? 'c-bordo' : 'c-green'}">${plata(base - falta - proxTarjetas)}</div><div class="s">${[falta ? `fijos ${plata(falta)}` : '', proxTarjetas ? `tarjeta ${plata(proxTarjetas)}` : ''].filter(Boolean).join(' + ') || 'no te falta pagar nada'}</div></div>
     </div>
-
 
     <div class="grid g2">
       <div class="card">
@@ -687,82 +838,138 @@ function resumenPesos() {
   dibujarBarras('#gMeses', meses, [
     { label: 'Ingresos', color: '--green', data: serie(ms => suma(ms.filter(m => m.tipo === 'ingreso' && m.moneda !== 'USD')) + sumaPesos(ms.filter(m => m.tipo === 'retiro'))) },
     { label: 'Gastos', color: '--bordo', data: serie(ms => suma(ms.filter(m => m.tipo === 'gasto' && m.moneda !== 'USD'))) },
-    { label: 'Ahorro', color: '--gold', data: serie(ms => sumaPesos(ms.filter(m => m.tipo === 'ahorro'))) }
+    { label: 'A ahorros', color: '--gold', data: serie(ms => sumaPesos(ms.filter(m => m.tipo === 'ahorro'))) }
   ], 'ARS');
 }
 
+/** Cuenta corriente en dólares (no son los ahorros: esos están en la pestaña Ahorros). */
 function resumenDolares() {
   const movs = movsDelMes().filter(m => m.moneda === 'USD');
-  const compras = movs.filter(m => m.tipo === 'ahorro'), ventas = movs.filter(m => m.tipo === 'retiro');
   const gastosL = movs.filter(m => m.tipo === 'gasto'), ingresosL = movs.filter(m => m.tipo === 'ingreso');
-  const comprado = suma(compras), gastado = suma(gastosL);
-  const variacion = comprado + suma(ingresosL) - suma(ventas) - gastado;
-  const saldo = saldoUSDHasta(S.mes);
-  const conPesos = compras.filter(m => m.pesos);
-  const cotProm = suma(conPesos) ? sumaPesos(conPesos) / suma(conPesos) : 0;
-  const anio = S.mes.slice(0, 4);
-  const delAnio = (S.datos.movimientos || []).filter(m => m.mes.startsWith(anio) && m.mes <= S.mes);
-  const ahorroAnio = suma(delAnio.filter(m => m.tipo === 'ahorro')) - suma(delAnio.filter(m => m.tipo === 'retiro'));
+  const aAhorros = movs.filter(m => m.tipo === 'ahorro' && m.cuenta === 'USD'), deAhorros = movs.filter(m => m.tipo === 'retiro' && m.cuenta === 'USD');
+  const gastado = suma(gastosL), ingresado = suma(ingresosL);
+  const sal = saldosHasta(S.mes);
   const fijosUSD = estadoFijos().filter(e => e.f.moneda === 'USD');
   const porCat = agrupar(gastosL, 'categoria');
-  const ini = Number(S.datos.ajustes?.saldoInicialUSD) || 0;
   const v = $('#resumenCuerpo');
-
-  const nada = !(S.datos.movimientos || []).some(m => m.moneda === 'USD') && !ini && !fijosUSD.length;
-  if (nada) {
-    v.innerHTML = `<div class="card vacio"><div class="em">🐷</div><b>Tu cuenta en dólares está vacía</b>
-      Cuando compres dólares decile a Siri <i>"compré 200 dólares a 1.250.000"</i>, y tus gastos en dólares <i>"gasté 20 dólares en Spotify"</i>.
-      <div style="margin-top:14px"><button class="btn" data-ir="ajustes">Cargar lo que ya tengo ahorrado</button></div></div>`;
-    return;
-  }
 
   v.innerHTML = `
   <div class="grid">
     <div class="card hero navy">
-      <div class="lbl">Tu cuenta en dólares ${S.mes === mesActual() ? 'hoy' : 'al cierre de ' + esc(labelMes(S.mes).split(' ')[0].toLowerCase())}</div>
-      <div class="big num">${plata(saldo, 'USD')}</div>
+      <div class="lbl">Cuenta en dólares ${S.mes === mesActual() ? 'hoy' : 'al cierre de ' + esc(labelMes(S.mes).split(' ')[0].toLowerCase())}</div>
+      <div class="big num">${plata(sal.usd, 'USD')}</div>
       <div class="fila">
-        <div class="pill">Ahorraste<b class="num">+${plata(comprado, 'USD')}</b></div>
-        <div class="pill">Gastaste<b class="num">−${plata(gastado, 'USD')}</b></div>
+        <div class="pill">Entró este mes<b class="num">+${plata(ingresado + suma(deAhorros), 'USD')}</b></div>
+        <div class="pill">Salió este mes<b class="num">−${plata(gastado + suma(aAhorros), 'USD')}</b></div>
+      </div>
+    </div>
+    ${sal.usd < 0 ? `<div class="nota">⚠️ La cuenta en dólares quedó en negativo. Revisá en <button class="link" data-ir="ajustes">Ajustes</button> cuánto tenías al empezar, o pasá plata desde tus ahorros.</div>` : ''}
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>Gastos en dólares</h3>
+        ${porCat.length ? barrasCat(porCat, gastado, 'USD') : '<div class="vacio" style="padding:14px">Sin gastos en dólares este mes.</div>'}
+      </div>
+      <div class="card">
+        <h3>Fijos en dólares <button class="link" data-ir="fijos" style="font-size:13px">Ver</button></h3>
+        ${fijosUSD.length ? `<div class="barras">${fijosUSD.map(e => `<div class="barra-fila" style="grid-template-columns:1fr auto"><div><div class="nm">${esc(e.f.nombre)}</div><small class="est ${e.estado}" style="font-size:12px">${e.pago ? 'Pagado' : e.f.debitoAutomatico ? 'Se debita el ' + e.dia : e.estado === 'vencido' ? 'Vencido' : 'Vence el ' + e.dia}</small></div><div class="mt num">${plata(e.pago ? e.pago.monto : e.f.monto, 'USD')}</div></div>`).join('')}</div>`
+          : '<div class="vacio" style="padding:14px">No tenés fijos en dólares.</div>'}
+      </div>
+      <div class="card span2">
+        <h3>Saldo de la cuenta <small style="font-weight:500">a fin de cada mes</small></h3>
+        <div class="chart-box"><canvas id="gUSD"></canvas></div>
+      </div>
+    </div>
+  </div>`;
+  const meses = [...Array(12)].map((_, i) => moverMes(S.mes, i - 11));
+  dibujarBarras('#gUSD', meses, [{ label: 'Cuenta en dólares', color: '--navy', data: meses.map(me => saldosHasta(me).usd) }], 'USD', false);
+}
+
+/* ---------------- Ahorros ---------------- */
+function renderAhorros() {
+  const aj = AJ();
+  const sal = saldosHasta(S.mes);
+  const monedas = aj.ahorroMonedas.slice();
+  if (sal.ahorroUSD && !monedas.includes('USD')) monedas.push('USD');
+  if (sal.ahorroARS && !monedas.includes('ARS')) monedas.push('ARS');
+  const cot = cotizacion();
+  const verEn = monedas.includes(S.verAhorroEn) ? S.verAhorroEn : (monedas.includes('USD') ? 'USD' : 'ARS');
+  const total = (s, en) => en === 'USD' ? s.ahorroUSD + (cot ? s.ahorroARS / cot.v : 0) : s.ahorroARS + (cot ? s.ahorroUSD * cot.v : 0);
+  const puedeConvertir = monedas.length > 1 && cot;
+  const totalAhora = monedas.length > 1 ? total(sal, verEn) : (verEn === 'USD' ? sal.ahorroUSD : sal.ahorroARS);
+
+  const movs = movsDelMes().filter(esAhorroMov);
+  const netoMes = mon => suma(movs.filter(m => m.moneda === mon && m.tipo === 'ahorro')) - suma(movs.filter(m => m.moneda === mon && m.tipo === 'retiro'));
+  const anio = S.mes.slice(0, 4);
+  const delAnio = (S.datos.movimientos || []).filter(m => esAhorroMov(m) && m.mes.startsWith(anio) && m.mes <= S.mes);
+  const netoAnio = mon => suma(delAnio.filter(m => m.moneda === mon && m.tipo === 'ahorro')) - suma(delAnio.filter(m => m.moneda === mon && m.tipo === 'retiro'));
+  const compras = movs.filter(m => m.tipo === 'ahorro' && m.moneda === 'USD' && m.cuenta !== 'USD' && m.pesos > 0);
+  const cotProm = suma(compras) ? sumaPesos(compras) / suma(compras) : 0;
+  const v = $('#v-ahorros');
+
+  const nada = !(S.datos.movimientos || []).some(esAhorroMov) && !aj.saldoInicialAhorroUSD && !aj.saldoInicialAhorroARS;
+  if (nada) {
+    v.innerHTML = `<div class="card vacio"><div class="em">🐷</div><b>Todavía no cargaste ahorros</b>
+      Tocá <b style="display:inline;color:inherit">+</b> para sumar plata a tus ahorros, o decile a Siri <i>"${monedas.includes('USD') ? 'compré 200 dólares a 1450' : 'ahorré 50 mil pesos'}"</i>.
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn prim" id="ahNuevo">🐷 Agregar a ahorros</button><button class="btn" data-ir="ajustes">Cargar lo que ya tengo</button></div></div>`;
+    $('#ahNuevo').onclick = () => abrirMovimiento(null, 'ahorro');
+    return;
+  }
+
+  const bolsillo = (mon) => `
+    <div class="card bolsillo">
+      <span class="em">${mon === 'USD' ? '🇺🇸' : '🇦🇷'}</span>
+      <span><small>Ahorros en ${mon === 'USD' ? 'dólares' : 'pesos'}</small><b class="num">${plata(mon === 'USD' ? sal.ahorroUSD : sal.ahorroARS, mon)}</b>
+      <small style="font-weight:500">${netoMes(mon) ? (netoMes(mon) > 0 ? '+' : '−') + plata(Math.abs(netoMes(mon)), mon) + ' este mes' : 'Sin movimientos este mes'}</small></span>
+    </div>`;
+
+  v.innerHTML = `
+  <div class="grid">
+    <div class="card hero dorado">
+      <div class="lbl">${S.mes === mesActual() ? 'Tenés ahorrado' : 'Tenías ahorrado al cierre de ' + esc(labelMes(S.mes).split(' ')[0].toLowerCase())}</div>
+      <div class="big num" style="margin-bottom:4px">${plata(totalAhora, verEn)}</div>
+      <div class="sub">${monedas.length > 1 ? (cot ? `Todo junto, pasado a ${verEn === 'USD' ? 'dólares' : 'pesos'} a ${plata(cot.v)} por dólar (${esc(cot.origen)})` : 'Para sumar pesos y dólares necesito una cotización: cargala en Ajustes.') : `Todo en ${verEn === 'USD' ? 'dólares' : 'pesos'}`}</div>
+      ${puedeConvertir ? `<div class="seg seg-claro" style="margin:0 0 14px">
+        <button data-verahorro="USD" class="${verEn === 'USD' ? 'on' : ''}">Ver en dólares</button>
+        <button data-verahorro="ARS" class="${verEn === 'ARS' ? 'on' : ''}">Ver en pesos</button></div>` : ''}
+      <div class="fila">
+        <button class="pill boton" id="ahPoner">🐷 Agregar<b>Sumar a ahorros</b></button>
+        <button class="pill boton" id="ahSacar">↩︎ Sacar<b>Usar ahorros</b></button>
       </div>
     </div>
 
+    ${monedas.length > 1 ? `<div class="minis">${monedas.map(bolsillo).join('')}</div>` : ''}
+
     <div class="stats">
-      <div class="card stat"><div class="lbl">Variación del mes</div><div class="v num ${variacion < 0 ? 'c-bordo' : 'c-green'}">${variacion < 0 ? '−' : '+'}${plata(Math.abs(variacion), 'USD')}</div><div class="s">entre lo que entró y salió</div></div>
-      <div class="card stat"><div class="lbl">Cotización promedio</div><div class="v num c-gold">${cotProm ? plata(cotProm) : '—'}</div><div class="s">${cotProm ? 'pagaste por cada dólar' : 'sin compras este mes'}</div></div>
-      <div class="card stat"><div class="lbl">Pesos que ahorraste</div><div class="v num">${plata(sumaPesos(compras))}</div><div class="s">pasados a dólares este mes</div></div>
-      <div class="card stat"><div class="lbl">Ahorrado en ${anio}</div><div class="v num c-navy">${plata(ahorroAnio, 'USD')}</div><div class="s">compras − ventas del año</div></div>
+      ${monedas.map(mon => `<div class="card stat"><div class="lbl">Ahorrado este mes${monedas.length > 1 ? (mon === 'USD' ? ' (US$)' : ' ($)') : ''}</div><div class="v num ${netoMes(mon) < 0 ? 'c-bordo' : 'c-green'}">${netoMes(mon) < 0 ? '−' : '+'}${plata(Math.abs(netoMes(mon)), mon)}</div><div class="s">lo que pusiste menos lo que sacaste</div></div>`).join('')}
+      ${monedas.map(mon => `<div class="card stat"><div class="lbl">Ahorrado en ${anio}${monedas.length > 1 ? (mon === 'USD' ? ' (US$)' : ' ($)') : ''}</div><div class="v num c-navy">${plata(netoAnio(mon), mon)}</div><div class="s">en lo que va del año</div></div>`).join('')}
+      ${monedas.includes('USD') ? `<div class="card stat"><div class="lbl">Cotización promedio</div><div class="v num c-gold">${cotProm ? plata(cotProm) : '—'}</div><div class="s">${cotProm ? 'pagaste por dólar este mes' : 'no compraste dólares este mes'}</div></div>
+      <div class="card stat"><div class="lbl">Pesos que pasaste a dólares</div><div class="v num">${plata(sumaPesos(compras))}</div><div class="s">este mes</div></div>` : ''}
     </div>
 
     <div class="grid g2">
       <div class="card span2">
-        <h3>Cómo crece tu ahorro <small style="font-weight:500">saldo a fin de cada mes</small></h3>
+        <h3>Cómo crecen tus ahorros <small style="font-weight:500">a fin de cada mes</small></h3>
         <div class="chart-box"><canvas id="gAhorro"></canvas></div>
       </div>
-
-      <div class="card">
-        <h3>Compras y ventas de dólares</h3>
-        ${compras.length + ventas.length ? `<div class="barras">${[...compras, ...ventas].sort((a, b) => b.fecha.localeCompare(a.fecha)).map(m => `
-          <button class="barra-fila" style="grid-template-columns:28px 1fr auto;text-align:left" data-mov="${esc(m.id)}">
-            <div class="em" style="background:${m.tipo === 'ahorro' ? 'var(--gold-soft)' : 'var(--navy-soft)'}">${m.tipo === 'ahorro' ? '🐷' : '💱'}</div>
-            <div><div class="nm">${m.tipo === 'ahorro' ? 'Compra' : 'Venta'} · ${+m.fecha.slice(8, 10)}/${+m.fecha.slice(5, 7)}</div><small style="color:var(--muted);font-size:12px">${m.pesos ? plata(m.pesos) + ' · a ' + plata(m.pesos / m.monto) : 'sin monto en pesos'}</small></div>
-            <div class="mt num ${m.tipo === 'ahorro' ? 'c-green' : ''}">${m.tipo === 'ahorro' ? '+' : '−'}${plata(m.monto, 'USD')}</div></button>`).join('')}</div>`
-          : '<div class="vacio" style="padding:14px">No compraste dólares este mes.</div>'}
-      </div>
-
-      <div class="card">
-        <h3>Gastos en dólares</h3>
-        ${porCat.length ? barrasCat(porCat, gastado, 'USD') : '<div class="vacio" style="padding:14px">Sin gastos en dólares este mes.</div>'}
-        ${fijosUSD.length ? `<h3 style="margin-top:18px">Fijos en dólares <button class="link" data-ir="fijos" style="font-size:13px">Ver</button></h3>
-          <div class="barras">${fijosUSD.map(e => `<div class="barra-fila" style="grid-template-columns:1fr auto"><div><div class="nm">${esc(e.f.nombre)}</div><small class="est ${e.estado}" style="font-size:12px">${e.pago ? 'Pagado' : e.f.debitoAutomatico ? 'Se debita el ' + e.dia : e.estado === 'vencido' ? 'Vencido' : 'Vence el ' + e.dia}</small></div><div class="mt num">${plata(e.pago ? e.pago.monto : e.f.monto, 'USD')}</div></div>`).join('')}</div>` : ''}
+      <div class="card span2">
+        <h3>Movimientos de ahorros en ${esc(labelMes(S.mes).split(' ')[0].toLowerCase())}</h3>
+        ${movs.length ? `<div class="lista" style="border:0;box-shadow:none">${movs.sort((a, b) => b.fecha.localeCompare(a.fecha)).map(filaMov).join('')}</div>` : '<div class="vacio" style="padding:14px">No moviste tus ahorros este mes.</div>'}
       </div>
     </div>
   </div>`;
+  $('#ahPoner').onclick = () => abrirMovimiento(null, 'ahorro');
+  $('#ahSacar').onclick = () => abrirMovimiento(null, 'retiro');
 
   const meses = [...Array(12)].map((_, i) => moverMes(S.mes, i - 11));
-  dibujarBarras('#gAhorro', meses, [{ label: 'Cuenta en dólares', color: '--navy', data: meses.map(saldoUSDHasta) }], 'USD', false);
+  const series = monedas.length > 1 && cot
+    ? [{ label: 'Ahorros (en ' + (verEn === 'USD' ? 'dólares' : 'pesos') + ')', color: '--gold', data: meses.map(me => total(saldosHasta(me), verEn)) }]
+    : monedas.map(mon => ({ label: mon === 'USD' ? 'En dólares' : 'En pesos', color: mon === 'USD' ? '--gold' : '--green', data: meses.map(me => mon === 'USD' ? saldosHasta(me).ahorroUSD : saldosHasta(me).ahorroARS) }));
+  if (series.length === 1) dibujarBarras('#gAhorro', meses, series, monedas.length > 1 ? verEn : monedas[0], false);
+  else { const s = series.find(x => x.label === 'En dólares') || series[0]; dibujarBarras('#gAhorro', meses, [s], s.label === 'En dólares' ? 'USD' : 'ARS', true); } // sin cotización no puedo sumarlas
 }
 
+/* ---------------- Gráficos ---------------- */
 function agrupar(lista, campo) {
   const m = {};
   lista.forEach(x => { const k = x[campo] || 'Sin especificar'; m[k] = (m[k] || 0) + (Number(x.monto) || 0); });
@@ -790,8 +997,8 @@ function dibujarDona(porCat, total) {
 function dibujarBarras(sel, meses, series, moneda, leyenda = true) {
   const cv = $(sel);
   if (!cv || !prepararChart()) return;
-  const corto = v => moneda === 'USD' ? 'US$' + (v >= 1e3 ? (v / 1e3).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' mil' : v)
-    : v >= 1e6 ? '$' + (v / 1e6).toLocaleString('es-AR') + ' M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + ' mil' : '$' + v;
+  const corto = v => moneda === 'USD' ? 'US$' + (Math.abs(v) >= 1e3 ? (v / 1e3).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + ' mil' : v)
+    : Math.abs(v) >= 1e6 ? '$' + (v / 1e6).toLocaleString('es-AR') + ' M' : Math.abs(v) >= 1e3 ? '$' + Math.round(v / 1e3) + ' mil' : '$' + v;
   S.graficos.push(new Chart(cv, {
     type: 'bar',
     data: { labels: meses.map(mesCorto), datasets: series.map(s => ({ label: s.label, data: s.data, backgroundColor: colorVar(s.color), borderRadius: 6, maxBarThickness: 22 })) },
@@ -816,7 +1023,7 @@ function renderMovimientos() {
     </form>
     <div class="ayuda">Ej: "gasté 8500 en el súper con débito" · "cobré 300 mil de freelance"</div>
     <div class="buscador"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="busca" placeholder="Buscar" value="${esc(S.busqueda)}"></div>
-    <div class="chips">${[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['ahorro', 'Ahorro'], ['dolares', 'En dólares'], ['tarjeta', 'Tarjeta'], ['fijo', 'Fijos'], ['variable', 'Variables']].map(([k, t]) => `<button class="chip ${S.filtro === k ? 'on' : ''}" data-filtro="${k}">${t}</button>`).join('')}</div>
+    <div class="chips">${[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['ahorro', 'Ahorros'], ['dolares', 'En dólares'], ['tarjeta', 'Tarjeta'], ['fijo', 'Fijos'], ['variable', 'Variables']].map(([k, t]) => `<button class="chip ${S.filtro === k ? 'on' : ''}" data-filtro="${k}">${t}</button>`).join('')}</div>
     <div id="listaMovs"></div>`;
   renderListaMovs();
 }
@@ -826,7 +1033,7 @@ function renderListaMovs() {
   let lista = movsDelMes().filter(m => {
     if (S.filtro === 'gasto' || S.filtro === 'ingreso') { if (m.tipo !== S.filtro) return false; }
     if (S.filtro === 'ahorro' && m.tipo !== 'ahorro' && m.tipo !== 'retiro') return false;
-    if (S.filtro === 'dolares' && m.moneda !== 'USD') return false;
+    if (S.filtro === 'dolares' && (m.moneda !== 'USD' || esAhorroMov(m))) return false;
     if (S.filtro === 'tarjeta' && !vaATarjeta(m) && m.tipo !== 'pagoTarjeta') return false;
     if (S.filtro === 'fijo' && !m.idFijo) return false;
     if (S.filtro === 'variable' && (m.idFijo || m.tipo !== 'gasto')) return false;
@@ -857,12 +1064,16 @@ function filaMov(m) {
       <span class="mt num neg">−${plata(m.monto)}</span>
     </button>`;
   }
-  if (m.tipo === 'ahorro' || m.tipo === 'retiro') {
-    const det = [m.pesos ? plata(m.pesos) + ' · a ' + plata(m.pesos / m.monto) + ' c/u' : '', m.medio !== 'Sin especificar' ? m.medio : ''].filter(Boolean).map(esc).join(' · ');
+  if (esAhorroMov(m)) {
+    const ah = m.tipo === 'ahorro', conPesos = m.moneda === 'USD' && m.cuenta !== 'USD';
+    const titulo = ah ? (conPesos ? 'Compraste dólares' : 'A ahorros') : (conPesos ? 'Vendiste dólares' : 'Sacaste de ahorros');
+    const det = [conPesos && m.pesos ? plata(m.pesos) + ' · a ' + plata(m.pesos / m.monto) + ' c/u' : '',
+      m.cuenta === 'USD' ? (ah ? 'desde la cuenta en dólares' : 'a la cuenta en dólares') : '',
+      m.moneda === 'ARS' ? (ah ? 'desde tu cuenta en pesos' : 'a tu cuenta en pesos') : ''].filter(Boolean).map(esc).join(' · ');
     return `<button class="mov" data-mov="${esc(m.id)}">
-      <span class="em" style="background:${m.tipo === 'ahorro' ? 'var(--gold-soft)' : 'var(--navy-soft)'}">${m.tipo === 'ahorro' ? '🐷' : '💱'}</span>
-      <span style="min-width:0"><b>${m.tipo === 'ahorro' ? 'Compraste dólares' : 'Vendiste dólares'}</b><small>${m.origen === 'siri' ? '<span class="tag siri">SIRI</span> ' : ''}${det || 'Ahorro'}</small></span>
-      <span class="mt num ${m.tipo === 'ahorro' ? 'ahorro' : 'neg'}">${m.tipo === 'ahorro' ? '+' : '−'}${plata(m.monto, 'USD')}</span>
+      <span class="em" style="background:${ah ? 'var(--gold-soft)' : 'var(--navy-soft)'}">${ah ? '🐷' : '↩︎'}</span>
+      <span style="min-width:0"><b>${titulo}</b><small>${m.origen === 'siri' ? '<span class="tag siri">SIRI</span> ' : ''}${det || 'Ahorros'}</small></span>
+      <span class="mt num ${ah ? 'ahorro' : 'neg'}">${ah ? '+' : '−'}${plata(m.monto, m.moneda)}</span>
     </button>`;
   }
   const extra = [m.categoria, m.medio !== 'Sin especificar' ? m.medio : '', m.cuotas ? m.cuotas + ' cuotas' : ''].filter(Boolean).map(esc).join(' · ');
@@ -951,36 +1162,31 @@ function cerrarHoja() { $('#capa').classList.remove('on'); }
 
 function opciones(lista, sel) { return lista.map(o => `<option ${o === sel ? 'selected' : ''}>${esc(o)}</option>`).join(''); }
 
-function abrirTarjeta() {
-  const tj = infoTarjeta();
+function infoDeTarjeta(id) { return infoTarjetas().find(t => String(t.card.id) === String(id)) || infoTarjetas()[0]; }
+
+function abrirTarjeta(id) {
+  const tj = infoDeTarjeta(id);
+  if (!tj) return;
   if (tj.conCiclos) return abrirTarjetaCiclos(tj);
-  const fc = f => `${+f.slice(8, 10)}/${+f.slice(5, 7)}`;
-  const item = m => `<div class="tj-item"><span><b>${esc(m.descripcion || m.categoria)}</b><small>${fc(m.fecha)}${m.n > 1 ? ` · cuota ${m.cuotaNro} de ${m.n} (total ${plata(m.monto)})` : ''}</small></span><span class="num" style="font-weight:600">${plata(m.monto / m.n)}</span></div>`;
+  const item = m => `<div class="tj-item"><span><b>${esc(m.descripcion)}</b><small>${fc(m.fecha)}${m.n > 1 ? ` · cuota ${m.cuotaNro} de ${m.n} (total ${plata(m.monto)})` : ''}</small></span><span class="num" style="font-weight:600">${plata(m.monto / m.n)}</span></div>`;
   abrirHoja(`
-    <h2>💳 Tarjeta de crédito</h2>
+    <h2>💳 ${esc(tj.nombre)}</h2>
     <div class="tj-head">
-      <small>Próximo resumen (estimado)</small>
+      <small>Próximo pago (estimado)</small>
       <b class="num">${plata(tj.proximo)}</b>
       <p>${tj.deuda > tj.proximo + 0.5 ? `En total debés <strong>${plata(tj.deuda)}</strong>, contando las cuotas que vienen. ` : ''}${tj.ultimoPago ? `Último pago: ${plata(tj.ultimoPago.monto)} el ${fc(tj.ultimoPago.fecha)}.` : 'Todavía no registraste ningún pago.'}</p>
     </div>
     <button class="btn prim full" id="tjPagar" ${tj.deuda > 0.5 ? '' : 'disabled'}>Ya pagué la tarjeta</button>
-    ${!tj.ultimoPago && tj.deudaIni ? `<div class="tj-tit" style="margin-top:16px">Pendiente de antes</div><div class="tj-lista"><div class="tj-item"><span><b>Resumen anterior</b><small>Lo que cargaste en Ajustes</small></span><span class="num" style="font-weight:600">${plata(tj.deudaIni)}</span></div></div>` : ''}
     <div class="tj-tit" style="margin-top:16px">${tj.ultimoPago ? 'Compras desde el último pago' : 'Compras con crédito'}</div>
     ${tj.nuevos.length ? `<div class="tj-lista">${tj.nuevos.sort((a, b) => b.fecha.localeCompare(a.fecha)).map(item).join('')}</div>` : '<p class="ayuda" style="margin:6px 0 14px">No hay compras nuevas con crédito.</p>'}
     ${tj.cuotasViejas.length ? `<div class="tj-tit">Cuotas que siguen</div><div class="tj-lista">${tj.cuotasViejas.map(item).join('')}</div>` : ''}
-    <p class="ayuda" style="margin:0">Es un estimado: el monto exacto lo ves en el resumen del banco. Cuando pagues, poné lo que pagaste de verdad. Recién ahí se descuenta de tu plata.</p>
-    <button class="btn full" id="tjConfig" style="margin-top:14px">⚙️ Cargar día de cierre y vencimiento</button>`);
-  if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo || tj.deuda);
-  $('#tjConfig').onclick = irAjustesTarjeta;
-}
-
-function irAjustesTarjeta() {
-  cerrarHoja(); S.vista = 'ajustes'; guardado.set('mc_vista', S.vista); render();
-  setTimeout(() => { const el = $('#cardTarjeta'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+    <div class="nota">Cargá el día de cierre y de vencimiento para que la app separe cada resumen como el banco.</div>
+    <button class="btn full" id="tjConfig">⚙️ Configurar esta tarjeta</button>`);
+  if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo || tj.deuda, tj.nombre);
+  $('#tjConfig').onclick = () => abrirFormTarjeta(tarjetasCfg().find(c => c.id === tj.card.id) || { nombre: tj.nombre });
 }
 
 function abrirTarjetaCiclos(tj) {
-  const fc = f => f ? `${+f.slice(8, 10)}/${+f.slice(5, 7)}` : '';
   const nombreMes = ciclo => new Date(+ciclo.slice(0, 4), +ciclo.slice(5, 7) - 1, 1).toLocaleDateString('es-AR', { month: 'long' });
   const item = it => `<div class="tj-item"><span><b>${esc(it.descripcion)}</b><small>${it.inicial ? 'Cargado en Ajustes' : fc(it.fecha)}${it.n > 1 ? ` · cuota ${it.cuotaNro} de ${it.n} (total ${plata(it.monto)})` : ''}</small></span><span class="num" style="font-weight:600">${plata(it.monto / it.n)}</span></div>`;
   const items = l => `<div class="tj-lista">${l.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).map(item).join('')}</div>`;
@@ -988,7 +1194,7 @@ function abrirTarjetaCiclos(tj) {
   const pagadoCerrado = tj.cerrados.reduce((a, c) => a + c.pagado, 0);
   const a = tj.actual;
   abrirHoja(`
-    <h2>💳 Tarjeta de crédito</h2>
+    <h2>💳 ${esc(tj.nombre)}</h2>
     ${tj.aPagar > 0.5 ? `
     <div class="tj-head">
       <small>${tj.vencido ? '⚠️ Venció el ' + fc(tj.venceCerrado) : 'A pagar · vence el ' + fc(tj.venceCerrado)}</small>
@@ -1001,7 +1207,7 @@ function abrirTarjetaCiclos(tj) {
     <div class="tj-head" style="background:var(--surface-2)${tj.aPagar > 0.5 ? ';margin-top:6px' : ''}">
       <small style="color:var(--muted)">Resumen en curso · cierra el ${fc(a.cierra)} · vence el ${fc(a.vence)}</small>
       <b class="num" style="color:var(--ink)">${plata(a.pendiente)}</b>
-      <p>${tj.aPagar > 0.5 ? 'Lo que vayas comprando con crédito hasta el cierre se suma acá.' : 'No tenés ningún resumen cerrado sin pagar. Lo que compres con crédito hasta el cierre se suma acá.'}${a.pagado > 0.5 ? ` Ya adelantaste ${plata(a.pagado)}.` : ''}</p>
+      <p>${tj.aPagar > 0.5 ? 'Lo que vayas comprando con esta tarjeta hasta el cierre se suma acá.' : 'No tenés ningún resumen cerrado sin pagar. Lo que compres hasta el cierre se suma acá.'}${a.pagado > 0.5 ? ` Ya adelantaste ${plata(a.pagado)}.` : ''}</p>
     </div>
     ${tj.aPagar > 0.5 ? '' : `<button class="btn prim full" id="tjPagar" ${a.pendiente > 0.5 ? '' : 'disabled'}>Ya pagué la tarjeta</button>`}
     ${a.items.length ? `<div class="tj-tit" style="margin-top:16px">Compras del resumen en curso</div>${items(a.items)}` : '<p class="ayuda" style="margin:12px 0 14px">Todavía no hay compras en este resumen.</p>'}
@@ -1009,13 +1215,15 @@ function abrirTarjetaCiclos(tj) {
     ${tj.futuros.length ? `<div class="tj-tit">Cuotas de los próximos resúmenes</div><div class="tj-lista">${tj.futuros.map(c => `<div class="tj-item"><span><b>Resumen de ${esc(nombreMes(c.ciclo))}</b><small>vence el ${fc(c.vence)}</small></span><span class="num" style="font-weight:600">${plata(c.pendiente)}</span></div>`).join('')}</div>` : ''}
     <p class="ayuda" style="margin:0">En total debés <b>${plata(tj.deuda)}</b>${tj.enCuotasFuturas > 0.5 ? ', contando cuotas futuras' : ''}. Lo que pagues se descuenta de tu plata y se aplica primero al resumen más viejo.</p>
     <button class="btn full" id="tjConfig" style="margin-top:14px">⚙️ Cambiar cierre, vencimiento o saldo</button>`);
-  if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo);
-  $('#tjConfig').onclick = irAjustesTarjeta;
+  if ($('#tjPagar')) $('#tjPagar').onclick = () => abrirPagoTarjeta(null, tj.proximo, tj.nombre);
+  $('#tjConfig').onclick = () => abrirFormTarjeta(tarjetasCfg().find(c => c.id === tj.card.id));
 }
 
-function abrirPagoTarjeta(mov, sugerido) {
+function abrirPagoTarjeta(mov, sugerido, tarjeta) {
   const edit = !!mov;
-  const tarjetas = medios().filter(esCredito);
+  const tarjetas = tarjetasCfg().map(c => c.nombre);
+  if (!tarjetas.length) tarjetas.push('Crédito');
+  const sel = edit ? mov.medio : (tarjeta || tarjetas[0]);
   const num = v => v ? (+v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '';
   abrirHoja(`
     <h2>${edit ? 'Editar pago de tarjeta' : 'Pagué la tarjeta'}</h2>
@@ -1023,14 +1231,14 @@ function abrirPagoTarjeta(mov, sugerido) {
     ${!edit && sugerido ? '<p class="calc">Te sugerimos el estimado. Si el resumen dice otra cosa, cambialo.</p>' : ''}
     <div class="dos">
       <label class="campo"><span>Fecha</span><input id="ptFecha" type="date" value="${esc(edit ? mov.fecha : hoyISO())}"></label>
-      ${tarjetas.length > 1 ? `<label class="campo"><span>Tarjeta</span><select id="ptTarjeta">${opciones(tarjetas, edit ? mov.medio : tarjetas[0])}</select></label>` : '<span></span>'}
+      ${tarjetas.length > 1 ? `<label class="campo"><span>Tarjeta</span><select id="ptTarjeta">${opciones(tarjetas, sel)}</select></label>` : '<span></span>'}
     </div>
     <div class="acciones">${edit ? '<button class="btn peligro" id="ptBorrar">Borrar</button>' : '<button class="btn" data-cerrar>Cancelar</button>'}<button class="btn prim" id="ptOk">Guardar pago</button></div>`);
   if (!edit) setTimeout(() => $('#ptMonto').select(), 250);
   $('#ptOk').onclick = async () => {
     const monto = leerMonto($('#ptMonto').value);
     if (!monto) return toast('Poné cuánto pagaste', true);
-    const datos = { tipo: 'pagoTarjeta', monto, fecha: $('#ptFecha').value || hoyISO(), medio: $('#ptTarjeta') ? $('#ptTarjeta').value : (tarjetas[0] || 'Crédito'), descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', moneda: 'ARS' };
+    const datos = { tipo: 'pagoTarjeta', monto, fecha: $('#ptFecha').value || hoyISO(), medio: $('#ptTarjeta') ? $('#ptTarjeta').value : sel, descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', moneda: 'ARS' };
     $('#ptOk').disabled = true;
     try { await hacer(edit ? 'editar' : 'agregar', edit ? { id: mov.id, movimiento: datos } : { movimiento: datos }, edit ? 'Actualizado' : 'Pago de tarjeta guardado ✓ Se descontó de tu plata'); cerrarHoja(); }
     catch (e) { $('#ptOk').disabled = false; }
@@ -1041,36 +1249,49 @@ function abrirPagoTarjeta(mov, sugerido) {
   };
 }
 
-function abrirMovimiento(mov) {
+function abrirMovimiento(mov, tipoInicial) {
   if (mov && mov.tipo === 'pagoTarjeta') return abrirPagoTarjeta(mov);
+  const aj = AJ();
   const edit = !!mov;
-  const m = mov || { tipo: S.vista === 'resumen' && S.moneda === 'USD' ? 'ahorro' : 'gasto', moneda: 'ARS', fecha: S.mes === mesActual() ? hoyISO() : S.mes + '-01', medio: 'Sin especificar', categoria: '' };
+  const porDefecto = tipoInicial || (S.vista === 'ahorros' ? 'ahorro' : 'gasto');
+  const m = mov || { tipo: porDefecto, moneda: 'ARS', fecha: S.mes === mesActual() ? hoyISO() : S.mes + '-01', medio: 'Sin especificar', categoria: '' };
   const esFijo = !!m.idFijo;
   const num = v => v ? (+v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '';
+  const cambioIni = !!mov && esAhorroMov(mov); // estás editando un movimiento de ahorros
+  // monedas de ahorro disponibles (si estás editando uno viejo en otra moneda, también aparece)
+  const monAh = aj.ahorroMonedas.slice();
+  if (cambioIni && !monAh.includes(m.moneda)) monAh.push(m.moneda);
+  let monAhorro = cambioIni ? m.moneda : (monAh.includes('USD') ? 'USD' : monAh[0]);
+  let desdeUSD = cambioIni && m.cuenta === 'USD';
   abrirHoja(`
     <h2>${edit ? 'Editar movimiento' : 'Nuevo movimiento'}</h2>
     ${esFijo ? '<div class="nota">📅 Es el pago de un gasto fijo. Si lo borrás, el fijo vuelve a quedar pendiente.</div>' : `
     <div class="seg cuatro" id="mTipo">
       <button type="button" data-v="gasto">Gasto</button><button type="button" data-v="ingreso">Ingreso</button>
-      <button type="button" data-v="ahorro">🐷 Compré dólares</button><button type="button" data-v="retiro">💱 Vendí dólares</button>
+      <button type="button" data-v="ahorro">🐷 A ahorros</button><button type="button" data-v="retiro">↩︎ Sacar de ahorros</button>
     </div>`}
 
     <div id="gNormal">
-      <label class="campo"><span>Monto</span><input class="monto-input num" id="mMonto" inputmode="decimal" placeholder="0" value="${m.tipo === 'gasto' || m.tipo === 'ingreso' ? num(m.monto) : ''}"></label>
+      <label class="campo"><span>Monto</span><input class="monto-input num" id="mMonto" inputmode="decimal" placeholder="0" value="${!cambioIni ? num(m.monto) : ''}"></label>
     </div>
     <div id="gCambio">
-      <label class="campo"><span>Dólares</span><input class="monto-input num" id="cUsd" inputmode="decimal" placeholder="US$ 0" value="${m.tipo === 'ahorro' || m.tipo === 'retiro' ? num(m.monto) : ''}"></label>
-      <div class="dos">
-        <label class="campo"><span>Cotización (por dólar)</span><input class="num" id="cCot" inputmode="decimal" placeholder="$ 0" value="${m.pesos && m.monto ? num(m.pesos / m.monto) : ''}"></label>
-        <label class="campo"><span>Total en pesos</span><input class="num" id="cPesos" inputmode="decimal" placeholder="$ 0" value="${num(m.pesos)}"></label>
+      <div class="seg" id="cMoneda" ${monAh.length > 1 ? '' : 'hidden'}><button type="button" data-v="USD">🇺🇸 En dólares</button><button type="button" data-v="ARS">🇦🇷 En pesos</button></div>
+      <div class="seg" id="cOrigen" ${aj.cuentaUSD ? '' : 'hidden'}><button type="button" data-v="pesos"></button><button type="button" data-v="usd"></button></div>
+      <div id="cUsdBox">
+        <label class="campo"><span>Dólares</span><input class="monto-input num" id="cUsd" inputmode="decimal" placeholder="US$ 0" value="${cambioIni && m.moneda === 'USD' ? num(m.monto) : ''}"></label>
+        <div class="dos" id="cPesosBox">
+          <label class="campo"><span>Cotización (por dólar)</span><input class="num" id="cCot" inputmode="decimal" placeholder="$ 0" value="${m.pesos && m.monto && m.moneda === 'USD' ? num(m.pesos / m.monto) : ''}"></label>
+          <label class="campo"><span>Total en pesos</span><input class="num" id="cPesos" inputmode="decimal" placeholder="$ 0" value="${m.moneda === 'USD' ? num(m.pesos) : ''}"></label>
+        </div>
       </div>
+      <div id="cArsBox"><label class="campo"><span>Pesos</span><input class="monto-input num" id="cArs" inputmode="decimal" placeholder="$ 0" value="${cambioIni && m.moneda === 'ARS' ? num(m.monto) : ''}"></label></div>
       <div class="calc" id="cTexto"></div>
     </div>
 
-    <label class="campo" id="campoDesc"><span>Descripción</span><input id="mDesc" placeholder="Ej: Súper Coto" value="${esc(m.tipo === 'ahorro' || m.tipo === 'retiro' ? '' : m.descripcion || '')}"></label>
+    <label class="campo" id="campoDesc"><span>Descripción</span><input id="mDesc" placeholder="Ej: Súper Coto" value="${esc(cambioIni ? '' : m.descripcion || '')}"></label>
     <div class="dos">
       <label class="campo" id="campoCat"><span>Categoría</span><select id="mCat"></select></label>
-      <label class="campo"><span>Medio de pago</span><select id="mMedio">${opciones(medios(), m.medio)}</select></label>
+      <label class="campo" id="campoMedio"><span>Medio de pago</span><select id="mMedio">${opciones(medios(), m.medio)}</select></label>
     </div>
     <div class="dos">
       <label class="campo"><span>Fecha</span><input id="mFecha" type="date" value="${esc(m.fecha)}"></label>
@@ -1082,48 +1303,80 @@ function abrirMovimiento(mov) {
 
   let tipo = m.tipo;
   const cambio = () => tipo === 'ahorro' || tipo === 'retiro';
+  const conPesos = () => monAhorro === 'USD' && !desdeUSD; // compra/venta de dólares con pesos
   const llenarCats = () => {
     const lista = cats(tipo).map(c => c.nombre);
     $('#mCat').innerHTML = lista.map(n => { const c = catInfo(n); return `<option value="${esc(n)}" ${n === m.categoria ? 'selected' : ''}>${esc((c.emoji ? c.emoji + ' ' : '') + n)}</option>`; }).join('');
   };
-  const actualizar = () => {
-    $$('#mTipo button').forEach(x => x.classList.toggle('on', x.dataset.v === tipo));
-    $('#gNormal').hidden = cambio(); $('#gCambio').hidden = !cambio();
-    $('#campoCat').hidden = cambio(); $('#campoMoneda').hidden = cambio(); $('#campoDesc').hidden = cambio();
-    $('#campoCuotas').hidden = cambio() || tipo !== 'gasto' || !/cr[eé]dito/i.test($('#mMedio').value);
-    $('#notaCredito').hidden = $('#campoCuotas').hidden || $('#mMoneda').value === 'USD';
-    $('#mMonto').placeholder = $('#mMoneda').value === 'USD' ? 'US$ 0' : '$ 0';
-    if (!cambio()) llenarCats();
-    calcular();
-  };
   const calcular = (desde) => {
+    if (!cambio()) return;
+    if (monAhorro === 'ARS') {
+      const p = leerMonto($('#cArs').value);
+      $('#cTexto').innerHTML = p ? (tipo === 'ahorro' ? `Pasás <b>${plata(p)}</b> de tu cuenta a tus ahorros en pesos` : `Sacás <b>${plata(p)}</b> de tus ahorros y vuelve a tu cuenta en pesos`) : '';
+      return;
+    }
     const usd = leerMonto($('#cUsd').value), cot = leerMonto($('#cCot').value), pesos = leerMonto($('#cPesos').value);
+    if (!conPesos()) { $('#cTexto').innerHTML = usd ? (tipo === 'ahorro' ? `Pasás <b>${plata(usd, 'USD')}</b> de la cuenta en dólares a tus ahorros` : `Pasás <b>${plata(usd, 'USD')}</b> de tus ahorros a la cuenta en dólares`) : ''; return; }
     if (desde === 'pesos' && usd) $('#cCot').value = pesos ? num(pesos / usd) : '';
     else if (desde && usd && cot) $('#cPesos').value = num(usd * cot);
     const p = leerMonto($('#cPesos').value);
-    $('#cTexto').innerHTML = usd ? (tipo === 'ahorro' ? `Pasás <b>${plata(p)}</b> a <b>${plata(usd, 'USD')}</b>` : `Vendés <b>${plata(usd, 'USD')}</b> y recibís <b>${plata(p)}</b>`) : (tipo === 'ahorro' ? 'Poné los dólares que compraste y la cotización o el total en pesos.' : 'Poné los dólares que vendiste y la cotización o el total en pesos.');
+    $('#cTexto').innerHTML = usd ? (tipo === 'ahorro' ? `Pasás <b>${plata(p)}</b> a <b>${plata(usd, 'USD')}</b> de ahorro` : `Vendés <b>${plata(usd, 'USD')}</b> de tus ahorros y recibís <b>${plata(p)}</b>`) : (tipo === 'ahorro' ? 'Poné los dólares que compraste y la cotización o el total en pesos.' : 'Poné los dólares que vendiste y la cotización o el total en pesos.');
   };
-  $('#cUsd').oninput = () => calcular('usd'); $('#cCot').oninput = () => calcular('cot'); $('#cPesos').oninput = () => calcular('pesos');
+  const actualizar = () => {
+    $$('#mTipo button').forEach(x => x.classList.toggle('on', x.dataset.v === tipo));
+    const c = cambio();
+    $('#gNormal').hidden = c; $('#gCambio').hidden = !c;
+    $('#campoCat').hidden = c; $('#campoMoneda').hidden = c; $('#campoDesc').hidden = c;
+    $('#campoMedio').hidden = c && (monAhorro === 'ARS' || desdeUSD);
+    if (c) {
+      if (monAhorro === 'ARS') desdeUSD = false;
+      $$('#cMoneda button').forEach(x => x.classList.toggle('on', x.dataset.v === monAhorro));
+      $('#cOrigen').hidden = !aj.cuentaUSD || monAhorro !== 'USD';
+      const [b1, b2] = $$('#cOrigen button');
+      b1.textContent = tipo === 'ahorro' ? '💵 Compré con pesos' : '💵 Los vendí (a pesos)';
+      b2.textContent = tipo === 'ahorro' ? '🇺🇸 Desde mi cuenta en dólares' : '🇺🇸 A mi cuenta en dólares';
+      b1.classList.toggle('on', !desdeUSD); b2.classList.toggle('on', desdeUSD);
+      $('#cUsdBox').hidden = monAhorro !== 'USD'; $('#cArsBox').hidden = monAhorro !== 'ARS';
+      $('#cPesosBox').hidden = !conPesos();
+    }
+    $('#campoCuotas').hidden = c || tipo !== 'gasto' || !esCredito($('#mMedio').value);
+    $('#notaCredito').hidden = $('#campoCuotas').hidden || $('#mMoneda').value === 'USD';
+    $('#mMonto').placeholder = $('#mMoneda').value === 'USD' ? 'US$ 0' : '$ 0';
+    if (!c) llenarCats();
+    calcular();
+  };
+  $('#cUsd').oninput = () => calcular('usd'); $('#cCot').oninput = () => calcular('cot'); $('#cPesos').oninput = () => calcular('pesos'); $('#cArs').oninput = () => calcular();
   $('#mMedio').onchange = actualizar;
   $('#mMoneda').onchange = () => {
     if ($('#mMoneda').value === 'USD' && $('#mMedio').value === 'Sin especificar' && medios().includes('Cuenta en dólares')) $('#mMedio').value = 'Cuenta en dólares';
     actualizar();
   };
   $$('#mTipo button').forEach(b => b.onclick = () => { tipo = b.dataset.v; actualizar(); });
+  $$('#cMoneda button').forEach(b => b.onclick = () => { monAhorro = b.dataset.v; actualizar(); });
+  $$('#cOrigen button').forEach(b => b.onclick = () => { desdeUSD = b.dataset.v === 'usd'; actualizar(); });
   actualizar();
-  if (!edit) setTimeout(() => (cambio() ? $('#cUsd') : $('#mMonto')).focus(), 250);
+  if (!edit) setTimeout(() => (cambio() ? (monAhorro === 'ARS' ? $('#cArs') : $('#cUsd')) : $('#mMonto')).focus(), 250);
 
   $('#mOk').onclick = async () => {
     let datos;
     const base = { tipo, medio: $('#mMedio').value, fecha: $('#mFecha').value || hoyISO() };
     if (cambio()) {
-      const usd = leerMonto($('#cUsd').value);
-      if (!usd) return toast('Poné cuántos dólares', true);
-      datos = { ...base, monto: usd, pesos: leerMonto($('#cPesos').value), moneda: 'USD', descripcion: tipo === 'ahorro' ? 'Compra de dólares' : 'Venta de dólares', categoria: tipo === 'ahorro' ? 'Ahorro' : 'Venta de dólares', cuotas: '' };
+      const nombreCat = tipo === 'ahorro' ? 'Ahorro' : (conPesos() ? 'Venta de dólares' : 'Retiro de ahorros');
+      if (monAhorro === 'ARS') {
+        const p = leerMonto($('#cArs').value);
+        if (!p) return toast('Poné cuántos pesos', true);
+        datos = { ...base, medio: 'Sin especificar', monto: p, pesos: p, moneda: 'ARS', cuenta: 'ARS', descripcion: tipo === 'ahorro' ? 'Ahorro en pesos' : 'Saqué de ahorros', categoria: nombreCat, cuotas: '' };
+      } else {
+        const usd = leerMonto($('#cUsd').value);
+        if (!usd) return toast('Poné cuántos dólares', true);
+        datos = desdeUSD
+          ? { ...base, medio: 'Cuenta en dólares', monto: usd, pesos: 0, moneda: 'USD', cuenta: 'USD', descripcion: tipo === 'ahorro' ? 'De la cuenta en dólares a ahorros' : 'De ahorros a la cuenta en dólares', categoria: nombreCat, cuotas: '' }
+          : { ...base, monto: usd, pesos: leerMonto($('#cPesos').value), moneda: 'USD', cuenta: 'ARS', descripcion: tipo === 'ahorro' ? 'Compra de dólares' : 'Venta de dólares', categoria: nombreCat, cuotas: '' };
+      }
     } else {
       const monto = leerMonto($('#mMonto').value);
       if (!monto) return toast('Poné un monto', true);
-      datos = { ...base, monto, descripcion: $('#mDesc').value.trim(), categoria: $('#mCat').value, moneda: $('#mMoneda').value, cuotas: $('#campoCuotas').hidden ? '' : +$('#mCuotas').value || '', pesos: '' };
+      datos = { ...base, monto, descripcion: $('#mDesc').value.trim(), categoria: $('#mCat').value, moneda: $('#mMoneda').value, cuotas: $('#campoCuotas').hidden ? '' : +$('#mCuotas').value || '', pesos: '', cuenta: '' };
     }
     $('#mOk').disabled = true;
     try { await hacer(edit ? 'editar' : 'agregar', edit ? { id: m.id, movimiento: datos } : { movimiento: datos }, edit ? 'Actualizado' : 'Guardado ✓'); cerrarHoja(); }
@@ -1214,10 +1467,101 @@ function renderBienvenida() {
 }
 
 const fmtCampo = v => Number(v) ? (+v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : '';
+/* ---------------- Tema claro / oscuro ---------------- */
+function aplicarTema(t, guardar) {
+  t = t || 'auto';
+  if (guardar) guardado.set('mc_tema', t);
+  const r = document.documentElement;
+  if (t === 'claro') r.dataset.theme = 'light'; else if (t === 'oscuro') r.dataset.theme = 'dark'; else delete r.dataset.theme;
+  const oscuro = t === 'oscuro' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  $$('meta[name="theme-color"]').forEach(x => x.setAttribute('content', oscuro ? '#121715' : '#F6F1E7'));
+}
+const temaActual = () => guardado.get('mc_tema') || 'auto';
+const segTema = () => `<div class="seg tres" id="segTema">${[['auto', '🌗 Automático'], ['claro', '☀️ Claro'], ['oscuro', '🌙 Oscuro']].map(([k, t]) => `<button type="button" data-tema="${k}" class="${temaActual() === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+
+/* ---------------- Ajustes ---------------- */
 function renderAjustes() {
+  const aj = AJ();
+  const hay = !!S.datos;
+  const dis = hay ? '' : 'disabled';
+  const tarjetas = aj.tarjetas;
+  const frases = aj.frases;
   const v = $('#v-ajustes');
   v.innerHTML = `
     <div class="grid g2">
+      <div class="card">
+        <h3>Apariencia</h3>
+        ${segTema()}
+        <p class="ayuda" style="margin:0">Automático usa el modo de tu celular. Se guarda en este dispositivo.</p>
+      </div>
+
+      <div class="card">
+        <h3>📲 Usarla como app</h3>
+        <p class="ayuda" style="margin:0 0 12px">Instalala en la pantalla de inicio de tu celular, como cualquier app.</p>
+        <button class="btn full" id="aInstalar">Ver cómo instalarla</button>
+      </div>
+
+      <div class="card">
+        <h3>🇦🇷 Cuenta en pesos</h3>
+        <label class="campo"><span>¿Cuánta plata tenés disponible en pesos? (banco, billeteras y efectivo)</span><input id="aIniArs" class="num" inputmode="decimal" placeholder="$ 0" value="${aj.fechaInicialARS ? (aj.saldoInicialARS || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
+        <label class="campo"><span>¿A qué fecha?</span><input id="aFechaArs" type="date" value="${esc(aj.fechaInicialARS || hoyISO())}"></label>
+        <button class="btn full" id="aGuardarIniArs" ${dis}>Guardar</button>
+        <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Desde esa fecha se suman tus ingresos y se restan tus gastos, lo que pasás a ahorros y lo que pagás de tarjeta. Lo que compres con crédito se descuenta recién cuando pagás el resumen.</p>
+      </div>
+
+      <div class="card">
+        <h3>🇺🇸 Cuenta en dólares</h3>
+        <label class="toggle"><span><b>Tengo cuenta en dólares para gastos</b><small>Por ejemplo, si te debitan suscripciones en dólares</small></span><span class="sw"><input type="checkbox" id="aCuentaUSD" ${aj.cuentaUSD ? 'checked' : ''}><i></i></span></label>
+        <label class="campo" id="aIniUsdBox" ${aj.cuentaUSD ? '' : 'hidden'}><span>¿Cuántos dólares tenías en la cuenta al empezar? (sin contar ahorros)</span><input id="aIniCuentaUsd" class="num" inputmode="decimal" placeholder="US$ 0" value="${fmtCampo(aj.saldoInicialCuentaUSD)}"></label>
+        <button class="btn full" id="aGuardarUsd" ${dis}>Guardar</button>
+        <p class="ayuda" style="margin:10px 0 0">${aj.cuentaUSD ? 'Tus gastos en dólares salen de esta cuenta.' : 'Sin cuenta en dólares, lo que gastes en dólares sale de tus ahorros en dólares.'}</p>
+      </div>
+
+      <div class="card" id="cardAhorros">
+        <h3>🐷 Ahorros</h3>
+        <p class="ayuda" style="margin:0 0 10px">¿En qué moneda ahorrás? Podés elegir las dos.</p>
+        <div class="checks">
+          <label class="check-op"><input type="checkbox" id="aAhUSD" ${aj.ahorroMonedas.includes('USD') ? 'checked' : ''}><span>🇺🇸 Dólares</span></label>
+          <label class="check-op"><input type="checkbox" id="aAhARS" ${aj.ahorroMonedas.includes('ARS') ? 'checked' : ''}><span>🇦🇷 Pesos</span></label>
+        </div>
+        <label class="campo" id="aAhUsdBox"><span>¿Cuántos dólares tenías ahorrados al empezar?</span><input id="aIniAhUsd" class="num" inputmode="decimal" placeholder="US$ 0" value="${fmtCampo(aj.saldoInicialAhorroUSD)}"></label>
+        <label class="campo" id="aAhArsBox"><span>¿Cuántos pesos tenías ahorrados al empezar?</span><input id="aIniAhArs" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(aj.saldoInicialAhorroARS)}"></label>
+        <label class="campo" id="aCotBox"><span>Cotización para sumar pesos y dólares (opcional; si lo dejás vacío uso la de tu última compra)</span><input id="aCotRef" class="num" inputmode="decimal" placeholder="$ por dólar" value="${fmtCampo(aj.cotizacionReferencia)}"></label>
+        <button class="btn full" id="aGuardarAh" ${dis}>Guardar</button>
+      </div>
+
+      <div class="card" id="cardTarjeta">
+        <h3>💳 Tarjetas de crédito</h3>
+        ${tarjetas.length ? `<div class="lista-simple">${tarjetas.map(t => `<button class="fila-simple" data-edittarjeta="${esc(t.id)}"><span><b>${esc(t.nombre)}</b><small>${t.cierre ? `Cierra el ${t.cierre} · vence el ${t.vence}` : 'Falta cargar cierre y vencimiento'}</small></span>${flecha}</button>`).join('')}</div>`
+          : '<p class="ayuda" style="margin:0 0 12px">No tenés tarjetas cargadas. Si pagás con crédito, agregala para que esas compras se descuenten recién cuando pagás el resumen.</p>'}
+        <button class="btn full" id="aNuevaTj" ${dis}>+ Agregar tarjeta</button>
+      </div>
+
+      <div class="card span2">
+        <h3>🎙️ Tus frases para Siri</h3>
+        <p class="ayuda" style="margin:0 0 12px">Creá atajos para lo que anotás seguido. Por ejemplo: si decís <b>"bondi"</b>, se anota como Transporte, con SUBE y $1.000. Si decís un monto, se usa ese.</p>
+        ${frases.length ? `<div class="lista-simple">${frases.map(f => `<button class="fila-simple" data-editfrase="${esc(f.id)}"><span><b>🎙️ "${esc(f.frase)}"</b><small>${esc(descFrase(f))}</small></span>${flecha}</button>`).join('')}</div>` : ''}
+        <button class="btn full" id="aNuevaFrase" ${dis}>+ Agregar frase</button>
+        <details class="ejemplos">
+          <summary>Frases que ya entiende Siri</summary>
+          <p class="ayuda" style="margin:8px 0">Decí "Oye Siri, anotar gasto" (o "anotar ingreso") y después:</p>
+          <div class="frases">
+            <div>gasté 8500 en el súper con débito</div>
+            <div>ayer gasté 5 mil en Uber con crédito</div>
+            <div>zapatillas 85.000 en 3 cuotas con ${esc(tarjetas[0]?.nombre || 'visa')}</div>
+            <div>pagué la luz 31.200, gasto fijo</div>
+            <div>(anotar ingreso) 300 mil de freelance por transferencia</div>
+            ${aj.ahorroMonedas.includes('USD') ? '<div>compré 200 dólares a 1450</div>' : ''}
+            ${aj.ahorroMonedas.includes('ARS') ? '<div>ahorré 50 mil pesos</div>' : ''}
+            <div>saqué 30 mil de ahorros</div>
+            ${aj.cuentaUSD ? '<div>pasé 100 dólares de la cuenta en dólares a ahorros</div>' : ''}
+            <div>pagué la tarjeta 350 mil</div>
+            <div>cuánta plata me queda</div>
+            <div>cuánto debo de la tarjeta</div>
+          </div>
+        </details>
+      </div>
+
       <div class="card">
         <h3>Conexión</h3>
         ${S.demo ? '<div class="nota">Estás viendo datos de ejemplo. Conectá tu planilla para usar tus datos reales.</div>' : `<div class="estado-con" style="margin-bottom:14px"><i></i>Conectada a tu planilla</div>`}
@@ -1226,70 +1570,305 @@ function renderAjustes() {
         ${!S.demo && S.datos?.planilla ? `<a class="btn full" style="margin-top:10px;text-decoration:none" href="${esc(S.datos.planilla)}" target="_blank" rel="noopener">Abrir mi planilla de Google</a>` : ''}
         ${S.demo ? '<button class="btn full" id="aSalirDemo" style="margin-top:10px">Salir del ejemplo</button>' : '<button class="btn full" id="aDesconectar" style="margin-top:10px">Desconectar este dispositivo</button>'}
       </div>
+
       <div class="card">
-        <h3>Tu plata en pesos</h3>
-        <label class="campo"><span>¿Cuánta plata tenés disponible en pesos? (sumá cuenta del banco, billeteras y efectivo)</span><input id="aIniArs" class="num" inputmode="decimal" placeholder="$ 0" value="${S.datos?.ajustes?.fechaInicialARS ? (Number(S.datos.ajustes.saldoInicialARS) || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 }) : ''}"></label>
-        <label class="campo"><span>¿A qué fecha?</span><input id="aFechaArs" type="date" value="${esc(S.datos?.ajustes?.fechaInicialARS || hoyISO())}"></label>
-        <button class="btn full" id="aGuardarIniArs" ${S.datos ? '' : 'disabled'}>Guardar</button>
-        <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Desde esa fecha se suman tus ingresos y se restan tus gastos y lo que pasás a dólares. Los movimientos anteriores a esa fecha no se cuentan, porque ya están incluidos en este saldo. Los gastos con tarjeta de crédito no se descuentan al anotarlos: se juntan en la tarjeta y se descuentan cuando pagás el resumen.</p>
-      </div>
-      <div class="card" id="cardTarjeta">
-        <h3>💳 Tarjeta de crédito</h3>
-        <div class="dos">
-          <label class="campo"><span>Día de cierre del resumen</span><input id="aCierreTj" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 26" value="${S.datos?.ajustes?.cierreTarjeta || ''}"></label>
-          <label class="campo"><span>Día de vencimiento</span><input id="aVenceTj" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 5" value="${S.datos?.ajustes?.vencimientoTarjeta || ''}"></label>
-        </div>
-        <label class="campo"><span>¿Cuánto te falta pagar del último resumen que ya cerró? (si ya lo pagaste, 0)</span><input id="aDeudaTj" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(S.datos?.ajustes?.deudaInicialTarjeta)}"></label>
-        <label class="campo"><span>¿Cuánto llevás gastado en el resumen que todavía no cerró? (en la app del banco suele decir "consumos del período" o "próximo resumen")</span><input id="aConsTj" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(S.datos?.ajustes?.consumosInicialesTarjeta)}"></label>
-        <label class="campo"><span>¿A qué fecha?</span><input id="aFechaTj" type="date" value="${esc(S.datos?.ajustes?.fechaTarjeta || hoyISO())}"></label>
-        <button class="btn full" id="aGuardarTj" ${S.datos ? '' : 'disabled'}>Guardar</button>
-        <p class="ayuda" style="margin:10px 0 0">Desde esa fecha, lo que anotes con crédito se suma al resumen que corresponda según el cierre. Las compras en cuotas reparten una cuota por resumen. Las compras con crédito anteriores a esa fecha no se cuentan, porque ya están en estos montos.</p>
-      </div>
-      <div class="card">
-        <h3>Tu cuenta en dólares</h3>
-        <label class="campo"><span>¿Cuántos dólares tenías ahorrados antes de empezar a usar la app?</span><input id="aIni" class="num" inputmode="decimal" placeholder="US$ 0" value="${S.datos?.ajustes?.saldoInicialUSD || ''}"></label>
-        <button class="btn full" id="aGuardarIni" ${S.datos ? '' : 'disabled'}>Guardar</button>
-        <p class="ayuda" style="margin:10px 0 0">Es el punto de partida. Después se suman solas tus compras de dólares y se restan tus gastos en dólares.</p>
-      </div>
-      <div class="card">
-        <h3>Frases para Siri</h3>
-        <p class="ayuda" style="margin:0 0 10px">Decí "Oye Siri, anotar gasto" (o "anotar ingreso") y después:</p>
-        <div class="frases">
-          <div>gasté 8500 en el súper con débito</div>
-          <div>ayer gasté 5 mil en Uber con crédito</div>
-          <div>zapatillas 85.000 en 3 cuotas con visa</div>
-          <div>pagué la luz 31.200, gasto fijo</div>
-          <div>pagué ChatGPT fijo</div>
-          <div>(anotar ingreso) 300 mil de freelance por transferencia</div>
-          <div>compré 200 dólares a 1.250.000 pesos</div>
-          <div>compré 100 dólares a 1450</div>
-          <div>gasté 20 dólares en ChatGPT</div>
-          <div>cuántos dólares tengo</div>
-          <div>cuánta plata me queda</div>
-          <div>pagué la tarjeta 350 mil</div>
-          <div>cuánto debo de la tarjeta</div>
-          <div>cuánto llevo gastado</div>
-        </div>
-        <p class="ayuda" style="margin:12px 0 0">Las categorías, palabras clave y medios de pago se editan directo en la planilla (hojas "Categorías" y "Medios de pago").</p>
+        <h3>Configuración inicial</h3>
+        <p class="ayuda" style="margin:0 0 12px">Volvé a hacer el paso a paso del principio: cuentas, ahorros, tarjetas y apariencia.</p>
+        <button class="btn full" id="aWizard" ${hay && !S.demo ? '' : 'disabled'}>Repetir configuración inicial</button>
       </div>
     </div>`;
-  $('#aGuardar').onclick = () => conectar('a');
-  $('#aGuardarIni').onclick = () => hacer('guardarAjustes', { ajustes: { saldoInicialUSD: leerMonto($('#aIni').value) } }, 'Guardado');
-  $('#aGuardarTj').onclick = () => {
-    const cierre = +$('#aCierreTj').value, vence = +$('#aVenceTj').value;
-    if (!(cierre >= 1 && cierre <= 31) || !(vence >= 1 && vence <= 31)) return toast('Poné el día de cierre y el de vencimiento (entre 1 y 31)', true);
-    hacer('guardarAjustes', { ajustes: { cierreTarjeta: cierre, vencimientoTarjeta: vence, deudaInicialTarjeta: leerMonto($('#aDeudaTj').value), consumosInicialesTarjeta: leerMonto($('#aConsTj').value), fechaTarjeta: $('#aFechaTj').value || hoyISO() } }, 'Tarjeta guardada ✓');
+
+  const verAh = () => {
+    $('#aAhUsdBox').hidden = !$('#aAhUSD').checked; $('#aAhArsBox').hidden = !$('#aAhARS').checked;
+    $('#aCotBox').hidden = !($('#aAhUSD').checked && $('#aAhARS').checked);
   };
+  verAh();
+  $('#aAhUSD').onchange = $('#aAhARS').onchange = verAh;
+  $('#aCuentaUSD').onchange = () => { $('#aIniUsdBox').hidden = !$('#aCuentaUSD').checked; };
+  $('#aInstalar').onclick = () => mostrarGuiaInstalar(true);
+  $('#aGuardar').onclick = () => conectar('a');
+  $('#aWizard').onclick = () => { S.wiz = null; S.forzarWizard = true; render(); };
   $('#aGuardarIniArs').onclick = () => {
     const txt = $('#aIniArs').value.trim();
     if (!txt) return toast('Poné cuánta plata tenés en pesos (puede ser 0)', true);
-    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO(), } }, 'Guardado ✓ Ya podés ver tu plata disponible en el Resumen');
+    hacer('guardarAjustes', { ajustes: { saldoInicialARS: leerMonto(txt), fechaInicialARS: $('#aFechaArs').value || hoyISO() } }, 'Guardado ✓');
   };
+  $('#aGuardarUsd').onclick = () => hacer('guardarAjustes', { ajustes: { cuentaUSD: $('#aCuentaUSD').checked, saldoInicialCuentaUSD: leerMonto($('#aIniCuentaUsd').value) } }, 'Guardado ✓');
+  $('#aGuardarAh').onclick = () => {
+    const mon = [$('#aAhUSD').checked && 'USD', $('#aAhARS').checked && 'ARS'].filter(Boolean);
+    if (!mon.length) return toast('Elegí al menos una moneda para tus ahorros', true);
+    hacer('guardarAjustes', { ajustes: { ahorroMonedas: mon, saldoInicialAhorroUSD: leerMonto($('#aIniAhUsd').value), saldoInicialAhorroARS: leerMonto($('#aIniAhArs').value), cotizacionReferencia: leerMonto($('#aCotRef').value) } }, 'Ahorros guardados ✓');
+  };
+  $('#aNuevaTj').onclick = () => abrirFormTarjeta();
+  $('#aNuevaFrase').onclick = () => abrirFormFrase();
   if ($('#aSalirDemo')) $('#aSalirDemo').onclick = () => { S.demo = false; S.datos = S.cfg ? guardado.get('mc_cache') : null; S.vista = 'resumen'; render(); if (S.cfg) refrescar(); };
   if ($('#aDesconectar')) $('#aDesconectar').onclick = () => {
     if (!confirm('¿Desconectar este dispositivo? Tus datos siguen en la planilla.')) return;
     guardado.del('mc_cfg'); guardado.del('mc_cache'); S.cfg = null; S.datos = null; render();
   };
+}
+
+/* ---------------- Tarjetas: formulario ---------------- */
+function abrirFormTarjeta(t) {
+  const edit = !!(t && t.id && tarjetasCfg().some(c => c.id === t.id));
+  t = t || {};
+  abrirHoja(`
+    <h2>${edit ? 'Editar tarjeta' : 'Nueva tarjeta de crédito'}</h2>
+    <label class="campo"><span>Nombre (como la vas a nombrar al hablarle a Siri)</span><input id="tjNombre" placeholder="Ej: Visa Galicia, Master" value="${esc(t.nombre || '')}"></label>
+    <div class="dos">
+      <label class="campo"><span>Día de cierre</span><input id="tjCierre" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 26" value="${t.cierre || ''}"></label>
+      <label class="campo"><span>Día de vencimiento</span><input id="tjVence" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 5" value="${t.vence || ''}"></label>
+    </div>
+    <label class="campo"><span>¿Cuánto te falta pagar del último resumen que ya cerró? (si ya lo pagaste, 0)</span><input id="tjDeuda" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(t.deudaInicial)}"></label>
+    <label class="campo"><span>¿Cuánto llevás gastado en el resumen que todavía no cerró? (en el banco: "consumos del período" o "próximo resumen")</span><input id="tjCons" class="num" inputmode="decimal" placeholder="$ 0" value="${fmtCampo(t.consumosIniciales)}"></label>
+    <label class="campo"><span>¿A qué fecha?</span><input id="tjFecha" type="date" value="${esc(t.fecha || hoyISO())}"></label>
+    <p class="ayuda">Desde esa fecha, lo que anotes con esta tarjeta se suma al resumen que corresponde según el cierre. Las compras anteriores no se cuentan, porque ya están en estos montos.</p>
+    <div class="acciones">${edit ? '<button class="btn peligro" id="tjBorrar">Eliminar</button>' : '<button class="btn" data-cerrar>Cancelar</button>'}<button class="btn prim" id="tjOk">Guardar</button></div>`);
+  if (!edit) setTimeout(() => $('#tjNombre').focus(), 250);
+  $('#tjOk').onclick = async () => {
+    const nombre = $('#tjNombre').value.trim();
+    const cierre = +$('#tjCierre').value, vence = +$('#tjVence').value;
+    if (!nombre) return toast('Ponele un nombre a la tarjeta', true);
+    if (!(cierre >= 1 && cierre <= 31) || !(vence >= 1 && vence <= 31)) return toast('Poné el día de cierre y el de vencimiento (entre 1 y 31)', true);
+    const otra = tarjetasCfg().find(c => normSimple(c.nombre) === normSimple(nombre) && c.id !== t.id);
+    if (otra) return toast('Ya tenés una tarjeta con ese nombre', true);
+    const nueva = { id: t.id || Math.random().toString(36).slice(2, 10), nombre, cierre, vence, deudaInicial: leerMonto($('#tjDeuda').value), consumosIniciales: leerMonto($('#tjCons').value), fecha: $('#tjFecha').value || hoyISO() };
+    const lista = tarjetasCfg().filter(c => c.id !== t.id).concat(edit ? [] : [nueva]);
+    if (edit) lista.splice(tarjetasCfg().findIndex(c => c.id === t.id), 0, nueva);
+    $('#tjOk').disabled = true;
+    try { await hacer('guardarAjustes', { ajustes: { tarjetas: lista } }, 'Tarjeta guardada ✓'); cerrarHoja(); } catch (e) { $('#tjOk').disabled = false; }
+  };
+  if (edit) $('#tjBorrar').onclick = async () => {
+    if (!confirm(`¿Eliminar "${t.nombre}"? Las compras que anotaste con esta tarjeta quedan en el historial.`)) return;
+    cerrarHoja(); await hacer('guardarAjustes', { ajustes: { tarjetas: tarjetasCfg().filter(c => c.id !== t.id) } }, 'Tarjeta eliminada');
+  };
+}
+
+/* ---------------- Frases para Siri: formulario ---------------- */
+function descFrase(f) {
+  return [f.tipo === 'ingreso' ? 'Ingreso' : 'Gasto', f.categoria || 'categoría automática', f.medio || '', f.monto ? plata(f.monto) : 'monto que digas', f.descripcion ? `"${f.descripcion}"` : ''].filter(Boolean).join(' · ');
+}
+
+function abrirFormFrase(f) {
+  const edit = !!f;
+  f = f || { frase: '', tipo: 'gasto', categoria: '', medio: '', monto: '', descripcion: '' };
+  let tipo = f.tipo || 'gasto';
+  abrirHoja(`
+    <h2>${edit ? 'Editar frase' : 'Nueva frase para Siri'}</h2>
+    <label class="campo"><span>Cuando diga…</span><input id="frFrase" placeholder='Ej: bondi, cafecito, cobro de Villa Tamen' value="${esc(f.frase)}"></label>
+    <div class="seg" id="frTipo"><button type="button" data-v="gasto">Gasto</button><button type="button" data-v="ingreso">Ingreso</button></div>
+    <div class="dos">
+      <label class="campo"><span>Categoría</span><select id="frCat"></select></label>
+      <label class="campo"><span>Medio de pago</span><select id="frMedio"><option value="">Que lo adivine</option>${medios().filter(x => x !== 'Sin especificar').map(x => `<option ${x === f.medio ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+    </div>
+    <div class="dos">
+      <label class="campo"><span>Monto (opcional)</span><input id="frMonto" class="num" inputmode="decimal" placeholder="El que digas" value="${fmtCampo(f.monto)}"></label>
+      <label class="campo"><span>Descripción (opcional)</span><input id="frDesc" placeholder="Ej: Colectivo" value="${esc(f.descripcion || '')}"></label>
+    </div>
+    <div class="calc" id="frVista"></div>
+    <div class="acciones">${edit ? '<button class="btn peligro" id="frBorrar">Eliminar</button>' : '<button class="btn" data-cerrar>Cancelar</button>'}<button class="btn prim" id="frOk">Guardar</button></div>`);
+  const llenar = () => {
+    $$('#frTipo button').forEach(b => b.classList.toggle('on', b.dataset.v === tipo));
+    const actual = $('#frCat').value || f.categoria;
+    $('#frCat').innerHTML = `<option value="">Que la adivine</option>` + cats(tipo).map(c => `<option value="${esc(c.nombre)}" ${c.nombre === actual ? 'selected' : ''}>${esc((c.emoji ? c.emoji + ' ' : '') + c.nombre)}</option>`).join('');
+    vista();
+  };
+  const vista = () => {
+    const fr = $('#frFrase').value.trim();
+    $('#frVista').innerHTML = fr ? `Si decís <b>"${esc(fr)}"</b> se anota: ${esc(descFrase({ tipo, categoria: $('#frCat').value, medio: $('#frMedio').value, monto: leerMonto($('#frMonto').value), descripcion: $('#frDesc').value.trim() }))}` : '';
+  };
+  $$('#frTipo button').forEach(b => b.onclick = () => { tipo = b.dataset.v; llenar(); });
+  ['#frFrase', '#frMonto', '#frDesc'].forEach(s => $(s).oninput = vista);
+  $('#frCat').onchange = $('#frMedio').onchange = vista;
+  llenar();
+  if (!edit) setTimeout(() => $('#frFrase').focus(), 250);
+  $('#frOk').onclick = async () => {
+    const frase = $('#frFrase').value.trim();
+    if (frase.length < 2) return toast('Escribí la frase que vas a decir', true);
+    const otra = AJ().frases.find(x => normSimple(x.frase) === normSimple(frase) && x.id !== f.id);
+    if (otra) return toast('Ya tenés esa frase', true);
+    const nueva = { id: f.id || Math.random().toString(36).slice(2, 10), frase, tipo, categoria: $('#frCat').value, medio: $('#frMedio').value, monto: leerMonto($('#frMonto').value) || '', descripcion: $('#frDesc').value.trim() };
+    const lista = AJ().frases.slice();
+    const i = lista.findIndex(x => x.id === f.id);
+    if (i >= 0) lista[i] = nueva; else lista.push(nueva);
+    $('#frOk').disabled = true;
+    try { await hacer('guardarAjustes', { ajustes: { frases: lista } }, 'Frase guardada ✓'); cerrarHoja(); } catch (e) { $('#frOk').disabled = false; }
+  };
+  if (edit) $('#frBorrar').onclick = async () => {
+    if (!confirm(`¿Eliminar la frase "${f.frase}"?`)) return;
+    cerrarHoja(); await hacer('guardarAjustes', { ajustes: { frases: AJ().frases.filter(x => x.id !== f.id) } }, 'Frase eliminada');
+  };
+}
+
+/* ---------------- Configuración inicial (primera vez) ---------------- */
+function renderWizard() {
+  $('#app').hidden = true; $('#fab').hidden = true;
+  const b = $('#bienvenida'); b.hidden = false;
+  const aj = AJ();
+  if (!S.wiz) S.wiz = {
+    paso: 0,
+    d: {
+      saldoInicialARS: aj.fechaInicialARS ? aj.saldoInicialARS : '', cuentaUSD: aj.cuentaUSD, saldoInicialCuentaUSD: aj.saldoInicialCuentaUSD,
+      ahorroMonedas: aj.ahorroMonedas.slice(), saldoInicialAhorroUSD: aj.saldoInicialAhorroUSD, saldoInicialAhorroARS: aj.saldoInicialAhorroARS,
+      tarjetas: aj.tarjetas.map(t => ({ ...t })), tieneTarjeta: aj.tarjetas.length ? true : null
+    }
+  };
+  const W = S.wiz, d = W.d;
+  const TOTAL = 5;
+  const n = v => v === '' || v === undefined ? '' : (+v).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  const puntos = `<div class="wiz-puntos">${[...Array(TOTAL)].map((_, i) => `<i class="${i <= W.paso ? 'on' : ''}"></i>`).join('')}</div>`;
+  const nav = (sig = 'Siguiente') => `<div class="acciones">${W.paso ? '<button class="btn" id="wAtras">Atrás</button>' : ''}<button class="btn prim" id="wSig">${sig}</button></div>`;
+  let html = '';
+  if (W.paso === 0) html = `
+      <div class="logo-xl">$</div>
+      <h1>¡Hola! Configuremos tu app.</h1>
+      <p class="lead">Son 4 preguntas rápidas para que la app quede como tus cuentas reales. Lo podés cambiar después en Ajustes.</p>
+      <div class="card"><h3>¿Cómo querés verla?</h3>${segTema()}</div>
+      ${nav('Empezar')}`;
+  if (W.paso === 1) html = `
+      ${puntos}<h1>🇦🇷 Tu plata en pesos</h1>
+      <p class="lead">¿Cuánto tenés disponible hoy en pesos? Sumá la cuenta del banco, billeteras virtuales y efectivo. No cuentes los ahorros: eso viene después.</p>
+      <div class="card"><label class="campo"><span>Tengo hoy</span><input id="wArs" class="monto-input num" inputmode="decimal" placeholder="$ 0" value="${n(d.saldoInicialARS)}"></label></div>
+      ${nav()}`;
+  if (W.paso === 2) html = `
+      ${puntos}<h1>🇺🇸 ¿Tenés cuenta en dólares?</h1>
+      <p class="lead">Una cuenta en dólares que usás para gastos, por ejemplo si te debitan suscripciones en dólares. Si los dólares que tenés son solo ahorro, elegí "No".</p>
+      <div class="card">
+        <div class="seg" id="wUsd"><button type="button" data-v="si" class="${d.cuentaUSD ? 'on' : ''}">Sí, tengo</button><button type="button" data-v="no" class="${!d.cuentaUSD ? 'on' : ''}">No</button></div>
+        <label class="campo" id="wUsdBox" ${d.cuentaUSD ? '' : 'hidden'}><span>¿Cuántos dólares tenés hoy en esa cuenta? (sin contar ahorros)</span><input id="wUsdMonto" class="num" inputmode="decimal" placeholder="US$ 0" value="${n(d.saldoInicialCuentaUSD)}"></label>
+      </div>
+      ${nav()}`;
+  if (W.paso === 3) html = `
+      ${puntos}<h1>🐷 Tus ahorros</h1>
+      <p class="lead">Van a tener su propia pestaña. ¿En qué moneda ahorrás? Podés elegir las dos.</p>
+      <div class="card">
+        <div class="checks">
+          <label class="check-op"><input type="checkbox" id="wAhUSD" ${d.ahorroMonedas.includes('USD') ? 'checked' : ''}><span>🇺🇸 Dólares</span></label>
+          <label class="check-op"><input type="checkbox" id="wAhARS" ${d.ahorroMonedas.includes('ARS') ? 'checked' : ''}><span>🇦🇷 Pesos</span></label>
+        </div>
+        <label class="campo" id="wAhUsdBox"><span>¿Cuántos dólares tenés ahorrados hoy?</span><input id="wAhUsd" class="num" inputmode="decimal" placeholder="US$ 0" value="${n(d.saldoInicialAhorroUSD)}"></label>
+        <label class="campo" id="wAhArsBox"><span>¿Cuántos pesos tenés ahorrados hoy?</span><input id="wAhArs" class="num" inputmode="decimal" placeholder="$ 0" value="${n(d.saldoInicialAhorroARS)}"></label>
+      </div>
+      ${nav()}`;
+  if (W.paso === 4) html = `
+      ${puntos}<h1>💳 Tarjetas de crédito</h1>
+      <p class="lead">Lo que compres con crédito no se descuenta de tu plata hasta que pagues el resumen. ¿Tenés tarjeta de crédito?</p>
+      <div class="card">
+        <div class="seg" id="wTj"><button type="button" data-v="si" class="${d.tieneTarjeta === true ? 'on' : ''}">Sí</button><button type="button" data-v="no" class="${d.tieneTarjeta === false ? 'on' : ''}">No tengo</button></div>
+        <div id="wTjBox" ${d.tieneTarjeta ? '' : 'hidden'}>
+          ${d.tarjetas.length ? `<div class="lista-simple">${d.tarjetas.map((t, i) => `<div class="fila-simple"><span><b>${esc(t.nombre)}</b><small>Cierra el ${t.cierre} · vence el ${t.vence}${t.deudaInicial || t.consumosIniciales ? ` · debés ${plata((+t.deudaInicial || 0) + (+t.consumosIniciales || 0))}` : ''}</small></span><button class="link" data-wquitar="${i}">Quitar</button></div>`).join('')}</div>` : ''}
+          <div class="tj-mini-form">
+            <div class="tj-tit">${d.tarjetas.length ? 'Agregar otra tarjeta' : 'Tu tarjeta'}</div>
+            <label class="campo"><span>Nombre</span><input id="wTjNombre" placeholder="Ej: Visa Galicia"></label>
+            <div class="dos">
+              <label class="campo"><span>Día de cierre</span><input id="wTjCierre" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 26"></label>
+              <label class="campo"><span>Día de vencimiento</span><input id="wTjVence" type="number" min="1" max="31" inputmode="numeric" placeholder="Ej: 5"></label>
+            </div>
+            <label class="campo"><span>Lo que te falta pagar del resumen que ya cerró</span><input id="wTjDeuda" class="num" inputmode="decimal" placeholder="$ 0"></label>
+            <label class="campo"><span>Lo que llevás gastado en el resumen que todavía no cerró</span><input id="wTjCons" class="num" inputmode="decimal" placeholder="$ 0"></label>
+            <button class="btn full" id="wTjAgregar">+ Agregar esta tarjeta</button>
+          </div>
+        </div>
+      </div>
+      ${nav('Terminar')}`;
+  b.innerHTML = `<div class="bienvenida wiz">${html}</div>`;
+
+  const guardarPaso = () => {
+    if (W.paso === 1) d.saldoInicialARS = $('#wArs').value.trim() === '' ? '' : leerMonto($('#wArs').value);
+    if (W.paso === 2 && d.cuentaUSD) d.saldoInicialCuentaUSD = leerMonto($('#wUsdMonto').value);
+    if (W.paso === 3) {
+      d.ahorroMonedas = [$('#wAhUSD').checked && 'USD', $('#wAhARS').checked && 'ARS'].filter(Boolean);
+      d.saldoInicialAhorroUSD = leerMonto($('#wAhUsd').value); d.saldoInicialAhorroARS = leerMonto($('#wAhArs').value);
+    }
+  };
+  const agregarTarjeta = (silencioso) => {
+    const nombre = $('#wTjNombre').value.trim(), cierre = +$('#wTjCierre').value, vence = +$('#wTjVence').value;
+    if (!nombre && silencioso) return true;
+    if (!nombre) { toast('Ponele un nombre a la tarjeta', true); return false; }
+    if (!(cierre >= 1 && cierre <= 31) || !(vence >= 1 && vence <= 31)) { toast('Poné el día de cierre y el de vencimiento (entre 1 y 31)', true); return false; }
+    d.tarjetas.push({ id: Math.random().toString(36).slice(2, 10), nombre, cierre, vence, deudaInicial: leerMonto($('#wTjDeuda').value), consumosIniciales: leerMonto($('#wTjCons').value), fecha: hoyISO() });
+    return true;
+  };
+  if ($('#wAtras')) $('#wAtras').onclick = () => { guardarPaso(); W.paso--; renderWizard(); window.scrollTo({ top: 0 }); };
+  $('#wSig').onclick = async () => {
+    guardarPaso();
+    if (W.paso === 1 && d.saldoInicialARS === '') return toast('Poné cuánto tenés en pesos (puede ser 0)', true);
+    if (W.paso === 3 && !d.ahorroMonedas.length) return toast('Elegí al menos una moneda', true);
+    if (W.paso === 4) {
+      if (d.tieneTarjeta === null) return toast('Contame si tenés tarjeta de crédito', true);
+      if (d.tieneTarjeta && !agregarTarjeta(true)) return;
+      if (d.tieneTarjeta && !d.tarjetas.length) return toast('Cargá tu tarjeta o elegí "No tengo"', true);
+      return terminarWizard();
+    }
+    W.paso++; renderWizard(); window.scrollTo({ top: 0 });
+  };
+  $$('#wUsd button').forEach(x => x.onclick = () => { d.cuentaUSD = x.dataset.v === 'si'; $$('#wUsd button').forEach(y => y.classList.toggle('on', y === x)); $('#wUsdBox').hidden = !d.cuentaUSD; });
+  const verAh = () => { if (!$('#wAhUSD')) return; $('#wAhUsdBox').hidden = !$('#wAhUSD').checked; $('#wAhArsBox').hidden = !$('#wAhARS').checked; };
+  if ($('#wAhUSD')) { verAh(); $('#wAhUSD').onchange = $('#wAhARS').onchange = verAh; }
+  $$('#wTj button').forEach(x => x.onclick = () => { d.tieneTarjeta = x.dataset.v === 'si'; $$('#wTj button').forEach(y => y.classList.toggle('on', y === x)); $('#wTjBox').hidden = !d.tieneTarjeta; });
+  if ($('#wTjAgregar')) $('#wTjAgregar').onclick = () => { if (agregarTarjeta(false)) renderWizard(); };
+  $$('[data-wquitar]').forEach(x => x.onclick = () => { d.tarjetas.splice(+x.dataset.wquitar, 1); renderWizard(); });
+}
+
+async function terminarWizard() {
+  const d = S.wiz.d;
+  const ajustes = {
+    configurado: true,
+    saldoInicialARS: d.saldoInicialARS || 0, fechaInicialARS: hoyISO(),
+    cuentaUSD: d.cuentaUSD, saldoInicialCuentaUSD: d.cuentaUSD ? d.saldoInicialCuentaUSD || 0 : 0,
+    ahorroMonedas: d.ahorroMonedas, saldoInicialAhorroUSD: d.saldoInicialAhorroUSD || 0, saldoInicialAhorroARS: d.saldoInicialAhorroARS || 0,
+    tarjetas: d.tieneTarjeta ? d.tarjetas : []
+  };
+  try {
+    await hacer('guardarAjustes', { ajustes }, '¡Listo! Tu app quedó configurada 🎉');
+    S.wiz = null; S.forzarWizard = false; S.vista = 'resumen'; S.mes = mesActual(); render();
+    setTimeout(() => mostrarGuiaInstalar(false), 900);
+  } catch (e) { /* el error ya se mostró */ }
+}
+
+/* ---------------- Guía para instalar en el celular ---------------- */
+let pedidoInstalar = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; });
+const enModoApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+function mostrarGuiaInstalar(manual) {
+  if (!manual && (enModoApp() || guardado.get('mc_guia_vista'))) return;
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const samsung = /SamsungBrowser/.test(ua);
+  const android = /Android/.test(ua);
+  if (!manual && !ios && !android) return; // en la compu no molesto
+  const enApp = /Instagram|FBAN|FBAV|WhatsApp|Line\//.test(ua);
+  let tab = ios ? 'ios' : samsung ? 'samsung' : 'android';
+  const pasos = {
+    ios: ['Abrí este link en <b>Safari</b>. Si lo abriste desde WhatsApp o Instagram, tocá los tres puntos y elegí <b>Abrir en Safari</b>.',
+      'Tocá el botón <b>Compartir</b> <span class="ico-txt">⬆︎</span> (el cuadrado con una flecha para arriba). Si no lo ves, tocá <b>•••</b> y después <b>Compartir</b>.',
+      'Bajá y tocá <b>Agregar a pantalla de inicio</b>.',
+      'Si aparece la opción <b>Abrir como app web</b>, dejala activada. Tocá <b>Agregar</b>.'],
+    android: ['Abrí este link en <b>Chrome</b>. Así es en Motorola, Xiaomi y la mayoría de los Android.',
+      'Tocá los <b>tres puntos ⋮</b> arriba a la derecha.',
+      'Tocá <b>Agregar a la pantalla principal</b> o <b>Instalar app</b>.',
+      'Confirmá con <b>Instalar</b> o <b>Agregar</b>.'],
+    samsung: ['Si usás el navegador <b>Samsung Internet</b>: tocá el menú <b>≡</b> abajo a la derecha.',
+      'Tocá <b>Agregar página a</b> y elegí <b>Pantalla de inicio</b>.',
+      'Confirmá con <b>Agregar</b>.',
+      'Si usás <b>Chrome</b> en tu Samsung, seguí los pasos de la pestaña Android.']
+  };
+  const dibujar = () => {
+    abrirHoja(`
+      <h2>📲 Instalala como app</h2>
+      <p class="ayuda" style="margin:-6px 0 14px">Queda en la pantalla de inicio de tu celular con su ícono y se abre a pantalla completa, como cualquier app.</p>
+      ${enApp ? '<div class="nota">⚠️ Estás dentro de otra app (WhatsApp, Instagram…). Primero abrí el link en Safari o Chrome.</div>' : ''}
+      <div class="seg tres" id="giTabs">${[['ios', '📱 iPhone'], ['android', '🤖 Android'], ['samsung', 'Samsung']].map(([k, t]) => `<button type="button" data-v="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+      ${tab === 'android' && pedidoInstalar ? '<button class="btn prim full" id="giInstalar" style="margin-bottom:14px">Instalar ahora</button>' : ''}
+      <ol class="pasos">${pasos[tab].map(p => `<li>${p}</li>`).join('')}</ol>
+      <p class="ayuda">¿Otro navegador? Buscá en su menú <b>Agregar a pantalla de inicio</b> o <b>Instalar</b>. Si no aparece, abrí el link en Safari (iPhone) o Chrome (Android).</p>
+      <div class="acciones"><button class="btn prim" id="giOk">Entendido</button></div>`);
+    $$('#giTabs button').forEach(b => b.onclick = () => { tab = b.dataset.v; dibujar(); });
+    $('#giOk').onclick = () => { guardado.set('mc_guia_vista', true); cerrarHoja(); };
+    if ($('#giInstalar')) $('#giInstalar').onclick = async () => { pedidoInstalar.prompt(); try { await pedidoInstalar.userChoice; } catch (e) {} pedidoInstalar = null; guardado.set('mc_guia_vista', true); cerrarHoja(); };
+  };
+  dibujar();
 }
 
 /* ---------------- Modo ejemplo ---------------- */
@@ -1301,7 +1880,7 @@ const CATS_DEMO = [
   ['Viajes', 'gasto', '✈️', '#2E8BA8'], ['Impuestos y bancos', 'gasto', '🧾', '#6E6A60'], ['Otros', 'gasto', '📦', '#A39E93'],
   ['Sueldo', 'ingreso', '💼', '#2F5D50'], ['Freelance', 'ingreso', '💻', '#1F3A5F'], ['Otros ingresos', 'ingreso', '💰', '#B8862F']
 ].map(([nombre, tipo, emoji, color]) => ({ nombre, tipo, emoji, color }));
-const MEDIOS_DEMO = ['Cuenta en dólares', 'Efectivo', 'Débito', 'Crédito', 'Mercado Pago', 'Transferencia', 'MODO', 'Cuenta DNI', 'Sin especificar'].map(nombre => ({ nombre }));
+const MEDIOS_DEMO = ['Visa', 'Cuenta en dólares', 'Efectivo', 'Débito', 'Crédito', 'Mercado Pago', 'Transferencia', 'MODO', 'Cuenta DNI', 'Sin especificar'].map(nombre => ({ nombre }));
 
 function crearDemo() {
   let semilla = 11;
@@ -1312,22 +1891,22 @@ function crearDemo() {
     ['Alquiler', 450000, 10, 'Casa y servicios', 'Transferencia', false],
     ['Expensas', 85000, 10, 'Casa y servicios', 'Transferencia', false],
     ['Luz', 28000, 18, 'Casa y servicios', 'Débito', true],
-    ['Internet', 22000, 15, 'Casa y servicios', 'Crédito', true],
+    ['Internet', 22000, 15, 'Casa y servicios', 'Visa', true],
     ['Celular', 18000, 20, 'Casa y servicios', 'Débito', true],
-    ['Netflix', 9500, 5, 'Suscripciones', 'Crédito', true],
-    ['Spotify', 4500, 8, 'Suscripciones', 'Crédito', true],
+    ['Netflix', 9500, 5, 'Suscripciones', 'Visa', true],
+    ['Spotify', 4500, 8, 'Suscripciones', 'Visa', true],
     ['Gimnasio', 35000, 5, 'Deporte', 'Mercado Pago', false],
     ['ChatGPT', 20, 3, 'Suscripciones', 'Cuenta en dólares', true, 'USD'],
     ['iCloud', 3, 12, 'Suscripciones', 'Cuenta en dólares', true, 'USD'],
     ['Framer', 15, 28, 'Suscripciones', 'Cuenta en dólares', true, 'USD']
   ].map(([nombre, monto, dia, categoria, medio, debitoAutomatico, moneda = 'ARS']) => ({ id: idr(), nombre, monto, dia, categoria, medio, debitoAutomatico, activo: true, notas: '', moneda }));
   const plantillas = [
-    ['Súper Coto', 'Supermercado', 15000, 65000, ['Débito', 'Crédito']], ['Súper Día', 'Supermercado', 12000, 40000, ['Débito']],
+    ['Súper Coto', 'Supermercado', 15000, 65000, ['Débito', 'Visa']], ['Súper Día', 'Supermercado', 12000, 40000, ['Débito']],
     ['Verdulería', 'Supermercado', 4000, 12000, ['Efectivo', 'Mercado Pago']], ['Chino', 'Supermercado', 3000, 15000, ['Mercado Pago', 'Efectivo']],
-    ['Café', 'Comida afuera', 3500, 7000, ['Mercado Pago']], ['PedidosYa', 'Comida afuera', 12000, 25000, ['Crédito']],
+    ['Café', 'Comida afuera', 3500, 7000, ['Mercado Pago']], ['PedidosYa', 'Comida afuera', 12000, 25000, ['Visa']],
     ['Cena con amigas', 'Comida afuera', 18000, 40000, ['Débito', 'Transferencia']], ['Carga SUBE', 'Transporte', 5000, 10000, ['Mercado Pago']],
-    ['Uber', 'Transporte', 4500, 12000, ['Crédito']], ['Farmacia', 'Salud', 6000, 25000, ['Débito']],
-    ['Cine', 'Salidas y ocio', 9000, 15000, ['Crédito']], ['Ropa', 'Ropa y cuidado personal', 25000, 70000, ['Crédito']],
+    ['Uber', 'Transporte', 4500, 12000, ['Visa']], ['Farmacia', 'Salud', 6000, 25000, ['Débito']],
+    ['Cine', 'Salidas y ocio', 9000, 15000, ['Visa']], ['Ropa', 'Ropa y cuidado personal', 25000, 70000, ['Visa']],
     ['Peluquería', 'Ropa y cuidado personal', 15000, 30000, ['Efectivo']], ['Regalo cumple', 'Regalos', 15000, 35000, ['Transferencia']]
   ];
   const hoy = new Date(), movs = [];
@@ -1336,7 +1915,7 @@ function crearDemo() {
     const mes = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}`;
     const ultimo = k === 0 ? hoy.getDate() : diasDelMes(mes);
     const f = dia => `${mes}-${pad(Math.max(1, Math.min(dia, ultimo)))}`;
-    const add = o => movs.push({ id: idr(), moneda: 'ARS', cuotas: '', idFijo: '', origen: rnd() > .55 ? 'siri' : 'app', creado: '', ...o, mes: o.fecha.slice(0, 7) });
+    const add = o => movs.push({ id: idr(), moneda: 'ARS', cuotas: '', idFijo: '', origen: rnd() > .55 ? 'siri' : 'app', creado: '', cuenta: '', ...o, mes: o.fecha.slice(0, 7) });
     add({ tipo: 'ingreso', monto: 980000, fecha: f(3), descripcion: 'Sueldo', categoria: 'Sueldo', medio: 'Transferencia', origen: 'app' });
     add({ tipo: 'ingreso', monto: r100(160000 + rnd() * 140000), fecha: f(12 + Math.floor(rnd() * 8)), descripcion: 'Cliente social media', categoria: 'Freelance', medio: 'Transferencia' });
     fijos.forEach(fx => {
@@ -1346,31 +1925,48 @@ function crearDemo() {
     });
     const cot = 1250 + (5 - k) * 35 + Math.round(rnd() * 30);
     [150 + Math.round(rnd() * 3) * 50, k % 2 ? 0 : 100].filter(Boolean).forEach((usd, j) =>
-      add({ tipo: 'ahorro', monto: usd, pesos: usd * cot, moneda: 'USD', fecha: f(5 + j * 14), descripcion: 'Compra de dólares', categoria: 'Ahorro', medio: 'Transferencia' }));
+      add({ tipo: 'ahorro', monto: usd, pesos: usd * cot, moneda: 'USD', cuenta: 'ARS', fecha: f(5 + j * 14), descripcion: 'Compra de dólares', categoria: 'Ahorro', medio: 'Transferencia' }));
+    if (k % 2 === 0) add({ tipo: 'ahorro', monto: 50000, pesos: 50000, moneda: 'ARS', cuenta: 'ARS', fecha: f(8), descripcion: 'Ahorro en pesos', categoria: 'Ahorro', medio: 'Sin especificar' });
     if (rnd() > .5) add({ tipo: 'gasto', monto: 25 + Math.round(rnd() * 40), moneda: 'USD', fecha: f(1 + Math.floor(rnd() * ultimo)), descripcion: 'Compra online', categoria: 'Otros', medio: 'Cuenta en dólares' });
     const n = Math.round((20 + rnd() * 8) * (k === 0 ? ultimo / 30 : 1));
     for (let i = 0; i < n; i++) {
       const [descripcion, categoria, min, max, ms] = plantillas[Math.floor(rnd() * plantillas.length)];
       const medio = ms[Math.floor(rnd() * ms.length)];
-      add({ tipo: 'gasto', monto: r100(min + rnd() * (max - min)), fecha: f(1 + Math.floor(rnd() * ultimo)), descripcion, categoria, medio, cuotas: categoria.startsWith('Ropa') && medio === 'Crédito' ? 3 : '' });
+      add({ tipo: 'gasto', monto: r100(min + rnd() * (max - min)), fecha: f(1 + Math.floor(rnd() * ultimo)), descripcion, categoria, medio, cuotas: categoria.startsWith('Ropa') && medio === 'Visa' ? 3 : '' });
     }
   }
-  // pagos de la tarjeta: cada día 5 se paga el resumen que cerró el 26 del mes anterior
   const d5 = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1);
-  const ajDemo = { saldoInicialUSD: 2400, saldoInicialARS: 1800000, deudaInicialTarjeta: 0, consumosInicialesTarjeta: 0, cierreTarjeta: 26, vencimientoTarjeta: 5, fechaInicialARS: `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01` };
+  const inicio = `${d5.getFullYear()}-${pad(d5.getMonth() + 1)}-01`;
+  const tarjetas = [{ id: 'visa', nombre: 'Visa', cierre: 26, vence: 5, deudaInicial: 0, consumosIniciales: 0, fecha: inicio }];
+  const ajustes = {
+    configurado: true, saldoInicialARS: 1800000, fechaInicialARS: inicio, cuentaUSD: true, saldoInicialCuentaUSD: 600,
+    ahorroMonedas: ['USD', 'ARS'], saldoInicialAhorroUSD: 2400, saldoInicialAhorroARS: 300000, cotizacionReferencia: 0, tarjetas,
+    frases: [{ id: 'f1', frase: 'bondi', tipo: 'gasto', categoria: 'Transporte', medio: 'Mercado Pago', monto: 1000, descripcion: 'Colectivo' },
+      { id: 'f2', frase: 'cafecito', tipo: 'gasto', categoria: 'Comida afuera', medio: 'Mercado Pago', monto: '', descripcion: 'Café' }]
+  };
+  // pagos de la tarjeta: cada día 5 se paga el resumen que cerró el 26 del mes anterior
   for (let k = 4; k >= 0; k--) {
     const d0 = new Date(hoy.getFullYear(), hoy.getMonth() - k, 5);
     if (d0 > hoy) continue;
     const fecha = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}-05`;
-    const monto = Math.round(calcularTarjeta(movs, ajDemo, fecha).aPagar);
-    if (monto) movs.push({ id: idr(), tipo: 'pagoTarjeta', monto, moneda: 'ARS', fecha, mes: fecha.slice(0, 7), descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', medio: 'Crédito', cuotas: '', idFijo: '', origen: 'app', creado: '' });
+    const monto = Math.round(calcularTarjeta(movs, tarjetas[0], fecha, tarjetas).aPagar);
+    if (monto) movs.push({ id: idr(), tipo: 'pagoTarjeta', monto, moneda: 'ARS', fecha, mes: fecha.slice(0, 7), descripcion: 'Pago de tarjeta', categoria: 'Pago de tarjeta', medio: 'Visa', cuotas: '', idFijo: '', origen: 'app', creado: '', cuenta: '' });
   }
-  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes: ajDemo };
+  return { categorias: CATS_DEMO, medios: MEDIOS_DEMO, fijos, movimientos: movs, planilla: '', ajustes };
 }
 
 function demoApi(accion, x) {
   const d = S.datos, idr = () => Math.random().toString(36).slice(2, 10);
-  const norm = m => { const fecha = m.fecha || hoyISO(); const o = { moneda: 'ARS', cuotas: '', idFijo: '', origen: 'app', creado: new Date().toISOString(), ...m, fecha, mes: fecha.slice(0, 7), monto: Math.abs(+m.monto) || 0 }; if (o.tipo === 'ahorro' || o.tipo === 'retiro') o.moneda = 'USD'; return o; };
+  const norm = m => {
+    const fecha = m.fecha || hoyISO();
+    const o = { moneda: 'ARS', cuotas: '', idFijo: '', origen: 'app', creado: new Date().toISOString(), cuenta: '', ...m, fecha, mes: fecha.slice(0, 7), monto: Math.abs(+m.monto) || 0 };
+    if (o.tipo === 'ahorro' || o.tipo === 'retiro') {
+      o.moneda = o.moneda === 'ARS' ? 'ARS' : 'USD';
+      o.cuenta = o.moneda === 'USD' && o.cuenta === 'USD' ? 'USD' : 'ARS';
+      o.pesos = o.moneda === 'ARS' ? o.monto : o.cuenta === 'USD' ? 0 : Math.abs(+o.pesos) || 0;
+    }
+    return o;
+  };
   const fechaFijo = (f, mes) => mes === mesActual() ? hoyISO() : `${mes}-${pad(Math.min(f.dia, diasDelMes(mes)))}`;
   switch (accion) {
     case 'agregar': d.movimientos.push(norm({ ...x.movimiento, id: idr() })); break;
@@ -1380,7 +1976,11 @@ function demoApi(accion, x) {
     case 'despagarFijo': d.movimientos = d.movimientos.filter(m => !(m.idFijo === x.idFijo && m.mes === x.mes)); break;
     case 'guardarFijo': { const i = d.fijos.findIndex(f => f.id === x.fijo.id); if (i >= 0) d.fijos[i] = { ...x.fijo }; else d.fijos.push({ ...x.fijo, id: idr() }); break; }
     case 'borrarFijo': d.fijos = d.fijos.filter(f => f.id !== x.id); break;
-    case 'guardarAjustes': d.ajustes = { ...(d.ajustes || {}), ...x.ajustes }; break;
+    case 'guardarAjustes': {
+      d.ajustes = { ...(d.ajustes || {}), ...x.ajustes };
+      (x.ajustes.tarjetas || []).forEach(t => { if (!d.medios.some(m => normSimple(m.nombre) === normSimple(t.nombre))) d.medios.unshift({ nombre: t.nombre }); });
+      break;
+    }
     case 'texto': return Promise.reject(new Error('En el modo ejemplo no interpreto frases. Conectá tu planilla para probarlo.'));
   }
   return Promise.resolve({ ok: true, datos: d });
@@ -1388,12 +1988,21 @@ function demoApi(accion, x) {
 
 /* ---------------- Eventos ---------------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-tab],[data-ir],[data-filtro],[data-mov],[data-pagar],[data-editfijo],[data-moneda],[data-tarjeta],#nuevoFijo,#nuevoFijo2');
+  const t = e.target.closest('[data-tab],[data-ir],[data-filtro],[data-mov],[data-pagar],[data-editfijo],[data-moneda],[data-tarjeta],[data-verahorro],[data-tema],[data-edittarjeta],[data-editfrase],#nuevoFijo,#nuevoFijo2');
   if (!t) return;
-  if (t.dataset.moneda) { S.moneda = t.dataset.moneda; guardado.set('mc_moneda', S.moneda); render(); window.scrollTo({ top: 0 }); return; }
-  if (t.dataset.tab || t.dataset.ir) { S.vista = t.dataset.tab || t.dataset.ir; guardado.set('mc_vista', S.vista); render(); window.scrollTo({ top: 0 }); return; }
+  if (t.dataset.tema) {
+    aplicarTema(t.dataset.tema, true);
+    $$('[data-tema]').forEach(b => b.classList.toggle('on', b.dataset.tema === t.dataset.tema));
+    if (!$('#app').hidden) render();
+    return;
+  }
+  if (t.dataset.moneda) { S.moneda = t.dataset.moneda; guardado.set('mc_moneda', S.moneda); S.vista = 'resumen'; render(); window.scrollTo({ top: 0 }); return; }
+  if (t.dataset.verahorro) { S.verAhorroEn = t.dataset.verahorro; guardado.set('mc_verahorro', S.verAhorroEn); render(); return; }
+  if (t.dataset.tab || t.dataset.ir) { S.vista = t.dataset.tab || t.dataset.ir; guardado.set('mc_vista', S.vista); cerrarHoja(); render(); window.scrollTo({ top: 0 }); return; }
   if (t.dataset.filtro) { S.filtro = t.dataset.filtro; $$('[data-filtro]').forEach(c => c.classList.toggle('on', c === t)); renderListaMovs(); return; }
-  if (t.dataset.tarjeta) { abrirTarjeta(); return; }
+  if (t.dataset.tarjeta) { abrirTarjeta(t.dataset.tarjeta); return; }
+  if (t.dataset.edittarjeta) { abrirFormTarjeta(tarjetasCfg().find(c => c.id === t.dataset.edittarjeta)); return; }
+  if (t.dataset.editfrase) { abrirFormFrase(AJ().frases.find(f => f.id === t.dataset.editfrase)); return; }
   if (t.dataset.mov) { const m = S.datos.movimientos.find(x => x.id === t.dataset.mov); if (m) abrirMovimiento(m); return; }
   if (t.dataset.pagar) { alternarPago(t.dataset.pagar); return; }
   if (t.dataset.editfijo) { const f = S.datos.fijos.find(x => x.id === t.dataset.editfijo); if (f) abrirFijo(f); return; }
@@ -1407,13 +2016,14 @@ document.addEventListener('submit', async e => {
   if (!texto) return;
   try { await hacer('texto', { texto }); inp.value = ''; } catch (err) {}
 });
-$('#fab').onclick = () => S.vista === 'fijos' ? abrirFijo() : abrirMovimiento();
+$('#fab').onclick = () => S.vista === 'fijos' ? abrirFijo() : abrirMovimiento(null, S.vista === 'ahorros' ? 'ahorro' : 'gasto');
 $('#mesPrev').onclick = () => { S.mes = moverMes(S.mes, -1); render(); };
 $('#mesNext').onclick = () => { S.mes = moverMes(S.mes, 1); render(); };
 $('#btnSync').onclick = () => refrescar(true);
 $('#capa').addEventListener('click', e => { if (e.target.id === 'capa') cerrarHoja(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarHoja(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S.cfg && !S.demo) refrescar(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (temaActual() === 'auto') { aplicarTema('auto'); if (!$('#app').hidden) render(); } });
 
 async function refrescar(avisar) {
   if (S.demo) { render(); return; }
@@ -1425,9 +2035,12 @@ async function refrescar(avisar) {
 }
 
 /* ---------------- Arranque ---------------- */
+aplicarTema(temaActual());
 if (S.cfg) S.datos = guardado.get('mc_cache');
 render();
 refrescar();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+setTimeout(() => { if (!$('#capa').classList.contains('on')) mostrarGuiaInstalar(false); }, 1200);
 </script>
 </body>
 </html>

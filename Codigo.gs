@@ -15,7 +15,7 @@ const TZ = 'America/Argentina/Buenos_Aires';
 const HOJAS = { MOV: 'Movimientos', FIJ: 'Fijos', CAT: 'Categorías', MED: 'Medios de pago', AJU: 'Ajustes' };
 
 const COLS = {
-  MOV: ['id', 'fecha', 'mes', 'tipo', 'monto', 'moneda', 'descripcion', 'categoria', 'medio', 'cuotas', 'idFijo', 'origen', 'creado', 'pesos'],
+  MOV: ['id', 'fecha', 'mes', 'tipo', 'monto', 'moneda', 'descripcion', 'categoria', 'medio', 'cuotas', 'idFijo', 'origen', 'creado', 'pesos', 'cuenta'],
   FIJ: ['id', 'nombre', 'monto', 'dia', 'categoria', 'medio', 'debitoAutomatico', 'activo', 'notas', 'moneda'],
   CAT: ['nombre', 'tipo', 'emoji', 'color', 'palabrasClave'],
   MED: ['nombre', 'palabrasClave'],
@@ -23,7 +23,7 @@ const COLS = {
 };
 
 const ENCABEZADOS = {
-  MOV: ['ID', 'Fecha', 'Mes', 'Tipo', 'Monto', 'Moneda', 'Descripción', 'Categoría', 'Medio de pago', 'Cuotas', 'ID fijo', 'Origen', 'Creado', 'Pesos (compra/venta de USD)'],
+  MOV: ['ID', 'Fecha', 'Mes', 'Tipo', 'Monto', 'Moneda', 'Descripción', 'Categoría', 'Medio de pago', 'Cuotas', 'ID fijo', 'Origen', 'Creado', 'Pesos (compra/venta de USD)', 'Cuenta (ahorros: ARS o USD)'],
   FIJ: ['ID', 'Nombre', 'Monto estimado', 'Día de vencimiento', 'Categoría', 'Medio de pago', 'Débito automático', 'Activo', 'Notas', 'Moneda'],
   CAT: ['Nombre', 'Tipo (gasto / ingreso)', 'Emoji', 'Color', 'Palabras clave (separadas por coma)'],
   MED: ['Nombre', 'Palabras clave (separadas por coma)'],
@@ -31,14 +31,17 @@ const ENCABEZADOS = {
 };
 
 const AJUSTES_INICIALES = [
-  ['saldoInicialUSD', 0, 'Dólares que ya tenías ahorrados antes de empezar a usar la app'],
-  ['saldoInicialARS', 0, 'Pesos que tenías disponibles en la fecha de abajo'],
-  ['fechaInicialARS', '', 'Desde esta fecha se suman ingresos y se restan gastos en pesos (aaaa-mm-dd)'],
-  ['deudaInicialTarjeta', 0, 'Tarjeta: lo que faltaba pagar del último resumen cerrado, en la fecha de la tarjeta'],
-  ['consumosInicialesTarjeta', 0, 'Tarjeta: lo que ya llevabas gastado en el resumen en curso, en la fecha de la tarjeta'],
-  ['cierreTarjeta', '', 'Tarjeta: día del mes en que cierra el resumen'],
-  ['vencimientoTarjeta', '', 'Tarjeta: día del mes en que vence (se paga) el resumen'],
-  ['fechaTarjeta', '', 'Tarjeta: desde esta fecha se suman las compras con crédito (aaaa-mm-dd)']
+  ['configurado', '', 'si = ya hiciste la configuración inicial'],
+  ['saldoInicialARS', 0, 'Cuenta en pesos: lo que tenías en la fecha de abajo'],
+  ['fechaInicialARS', '', 'Cuenta en pesos: desde esta fecha se suman ingresos y se restan gastos (aaaa-mm-dd)'],
+  ['cuentaUSD', '', 'si / no: ¿tenés cuenta en dólares para gastos?'],
+  ['saldoInicialCuentaUSD', 0, 'Cuenta en dólares: lo que tenías al empezar'],
+  ['ahorroMonedas', '', 'Monedas en las que ahorrás: USD, ARS o ARS,USD'],
+  ['saldoInicialAhorroUSD', 0, 'Ahorros en dólares al empezar'],
+  ['saldoInicialAhorroARS', 0, 'Ahorros en pesos al empezar'],
+  ['cotizacionReferencia', 0, 'Cotización del dólar para ver el total de ahorros en una sola moneda (0 = la de tu última compra)'],
+  ['tarjetas', '', 'Tarjetas de crédito (se editan desde la app)'],
+  ['frases', '', 'Tus frases para Siri (se editan desde la app)']
 ];
 
 // Podés editar todo esto después directamente en la planilla.
@@ -233,17 +236,21 @@ function datos_() {
   };
 }
 
+/** Lee la hoja Ajustes como { clave: valor } y completa lo que falte (ver completarAjustes en el núcleo). */
 function leerAjustes_() {
   const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HOJAS.AJU);
-  const res = { saldoInicialUSD: 0, saldoInicialARS: 0, fechaInicialARS: '', deudaInicialTarjeta: 0, consumosInicialesTarjeta: 0, cierreTarjeta: 0, vencimientoTarjeta: 0, fechaTarjeta: '' };
-  const NUMEROS = ['saldoInicialUSD', 'saldoInicialARS', 'deudaInicialTarjeta', 'consumosInicialesTarjeta', 'cierreTarjeta', 'vencimientoTarjeta'];
-  if (!h || h.getLastRow() < 2) return res;
-  h.getRange(2, 1, h.getLastRow() - 1, 2).getValues().forEach(function (r) {
-    if (NUMEROS.indexOf(r[0]) >= 0) res[r[0]] = Number(String(r[1]).replace(',', '.')) || 0;
-    if (r[0] === 'fechaInicialARS' || r[0] === 'fechaTarjeta') res[r[0]] = r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'yyyy-MM-dd') : String(r[1]).trim();
-  });
-  return res;
+  const crudo = {};
+  if (h && h.getLastRow() > 1) {
+    h.getRange(2, 1, h.getLastRow() - 1, 2).getValues().forEach(function (r) {
+      if (!r[0]) return;
+      crudo[r[0]] = r[1] instanceof Date ? Utilities.formatDate(r[1], TZ, 'yyyy-MM-dd') : String(r[1]).trim();
+    });
+  }
+  return completarAjustes(crudo);
 }
+
+let AJ_CACHE = null;
+function aj_() { if (!AJ_CACHE) AJ_CACHE = leerAjustes_(); return AJ_CACHE; }
 
 function guardarAjustes_(a) {
   const h = hoja_('AJU');
@@ -255,62 +262,170 @@ function guardarAjustes_(a) {
     if (i >= 0) h.getRange(i + 2, 2).setNumberFormat('@').setValue(String(valor));
     else { h.appendRow([clave, String(valor), nota]); h.getRange(h.getLastRow(), 2).setNumberFormat('@'); }
   };
-  if (a.saldoInicialUSD !== undefined) poner('saldoInicialUSD', Math.abs(Number(a.saldoInicialUSD)) || 0);
-  if (a.saldoInicialARS !== undefined) {
-    poner('saldoInicialARS', Number(a.saldoInicialARS) || 0);
-    const f = /^\d{4}-\d{2}-\d{2}$/.test(String(a.fechaInicialARS || '')) ? a.fechaInicialARS : hoy_();
-    poner('fechaInicialARS', f);
+  const fecha = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? v : hoy_(); };
+  const num = function (v) { return Number(v) || 0; };
+  const sino = function (v) { return v === true || v === 'si' ? 'si' : 'no'; };
+  if (a.configurado !== undefined) poner('configurado', sino(a.configurado));
+  if (a.saldoInicialARS !== undefined) { poner('saldoInicialARS', num(a.saldoInicialARS)); poner('fechaInicialARS', fecha(a.fechaInicialARS)); }
+  if (a.cuentaUSD !== undefined) poner('cuentaUSD', sino(a.cuentaUSD));
+  if (a.saldoInicialCuentaUSD !== undefined) poner('saldoInicialCuentaUSD', num(a.saldoInicialCuentaUSD));
+  // compatibilidad con la versión anterior de la app
+  if (a.saldoInicialUSD !== undefined && a.saldoInicialAhorroUSD === undefined) a.saldoInicialAhorroUSD = a.saldoInicialUSD;
+  if (a.saldoInicialAhorroUSD !== undefined) poner('saldoInicialAhorroUSD', Math.abs(num(a.saldoInicialAhorroUSD)));
+  if (a.saldoInicialAhorroARS !== undefined) poner('saldoInicialAhorroARS', Math.abs(num(a.saldoInicialAhorroARS)));
+  if (a.ahorroMonedas !== undefined) {
+    const m = [].concat(a.ahorroMonedas).join(',').split(',').filter(function (x) { return x === 'ARS' || x === 'USD'; });
+    poner('ahorroMonedas', (m.length ? m : ['USD']).join(','));
   }
-  if (a.deudaInicialTarjeta !== undefined) poner('deudaInicialTarjeta', Math.abs(Number(a.deudaInicialTarjeta)) || 0);
-  if (a.consumosInicialesTarjeta !== undefined) poner('consumosInicialesTarjeta', Math.abs(Number(a.consumosInicialesTarjeta)) || 0);
-  if (a.cierreTarjeta !== undefined) poner('cierreTarjeta', Math.min(31, Math.max(1, Math.round(Number(a.cierreTarjeta) || 1))));
-  if (a.vencimientoTarjeta !== undefined) poner('vencimientoTarjeta', Math.min(31, Math.max(1, Math.round(Number(a.vencimientoTarjeta) || 1))));
-  if (a.fechaTarjeta !== undefined) poner('fechaTarjeta', /^\d{4}-\d{2}-\d{2}$/.test(String(a.fechaTarjeta)) ? a.fechaTarjeta : hoy_());
+  if (a.cotizacionReferencia !== undefined) poner('cotizacionReferencia', Math.abs(num(a.cotizacionReferencia)));
+  if (a.tarjetas !== undefined) {
+    const tarjetas = (a.tarjetas || []).filter(function (t) { return t && String(t.nombre || '').trim(); }).map(function (t) {
+      return {
+        id: String(t.id || nuevoId_()), nombre: String(t.nombre).trim().slice(0, 40),
+        cierre: Math.min(31, Math.max(0, Math.round(num(t.cierre)))), vence: Math.min(31, Math.max(0, Math.round(num(t.vence)))),
+        deudaInicial: Math.abs(num(t.deudaInicial)), consumosIniciales: Math.abs(num(t.consumosIniciales)), fecha: fecha(t.fecha)
+      };
+    });
+    poner('tarjetas', JSON.stringify(tarjetas));
+    asegurarMediosTarjetas_(tarjetas);
+  }
+  if (a.frases !== undefined) {
+    const frases = (a.frases || []).filter(function (f) { return f && norm_(f.frase); }).map(function (f) {
+      return {
+        id: String(f.id || nuevoId_()), frase: String(f.frase).trim().slice(0, 60), tipo: f.tipo === 'ingreso' ? 'ingreso' : 'gasto',
+        categoria: String(f.categoria || ''), medio: String(f.medio || ''), monto: Math.abs(num(f.monto)) || '', descripcion: String(f.descripcion || '').slice(0, 80)
+      };
+    });
+    poner('frases', JSON.stringify(frases));
+  }
+  AJ_CACHE = null;
 }
 
-/* ---------- Tarjeta de crédito ---------- */
+/** Cada tarjeta es también un medio de pago (arriba de todo, para que Siri la reconozca por su nombre). */
+function asegurarMediosTarjetas_(tarjetas) {
+  const h = hoja_('MED');
+  const nombres = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, 1).getValues().map(function (r) { return norm_(r[0]); }) : [];
+  tarjetas.slice().reverse().forEach(function (t) {
+    if (nombres.indexOf(norm_(t.nombre)) >= 0) return;
+    const palabras = norm_(t.nombre).split(' ').filter(function (w) { return w.length >= 4 && w !== 'credito' && w !== 'tarjeta'; });
+    h.insertRowBefore(2);
+    h.getRange(2, 1, 1, 2).setValues([[t.nombre, [norm_(t.nombre)].concat(palabras).filter(function (x, i, arr) { return arr.indexOf(x) === i; }).join(', ')]])
+      .setFontWeight('normal').setBackground(null).setFontColor(null);
+  });
+}
 
-/** ¿Este medio de pago es una tarjeta de crédito? ("Crédito", "Visa Crédito", "Master crédito"…) */
-function esCredito_(medio) { return /cr[eé]dito/i.test(String(medio || '')); }
+/* ==== NÚCLEO COMPARTIDO (igual en Codigo.gs y en index.html) ==== */
 
-/** Gasto en pesos con tarjeta de crédito: se suma a la tarjeta y no a tu plata hasta que pagás el resumen. */
-function vaATarjeta_(m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && esCredito_(m.medio); }
+/** Ajustes con valores por defecto y migración desde versiones anteriores. */
+function completarAjustes(aj) {
+  aj = aj || {};
+  var n = function (v) { return Number(String(v === undefined || v === null ? '' : v).replace(',', '.')) || 0; };
+  var lista = function (v) {
+    if (Array.isArray(v)) return v;
+    try { var x = JSON.parse(v || '[]'); return Array.isArray(x) ? x : []; } catch (e) { return []; }
+  };
+  var tiene = function (k) { return aj[k] !== undefined && aj[k] !== null && aj[k] !== ''; };
+  var r = {
+    configurado: tiene('configurado') ? (aj.configurado === true || aj.configurado === 'si') : !!aj.fechaInicialARS,
+    saldoInicialARS: n(aj.saldoInicialARS),
+    fechaInicialARS: String(aj.fechaInicialARS || ''),
+    cuentaUSD: tiene('cuentaUSD') ? (aj.cuentaUSD === true || aj.cuentaUSD === 'si') : true,
+    saldoInicialCuentaUSD: n(aj.saldoInicialCuentaUSD),
+    // antes "saldoInicialUSD" era lo que tenías ahorrado en dólares
+    saldoInicialAhorroUSD: tiene('saldoInicialAhorroUSD') ? n(aj.saldoInicialAhorroUSD) : n(aj.saldoInicialUSD),
+    saldoInicialAhorroARS: n(aj.saldoInicialAhorroARS),
+    ahorroMonedas: tiene('ahorroMonedas') ? String(aj.ahorroMonedas).split(',').filter(function (x) { return x === 'ARS' || x === 'USD'; }) : ['USD'],
+    cotizacionReferencia: n(aj.cotizacionReferencia),
+    tarjetas: lista(aj.tarjetas),
+    frases: lista(aj.frases)
+  };
+  if (!r.ahorroMonedas.length) r.ahorroMonedas = ['USD'];
+  // una sola tarjeta configurada con la versión anterior
+  if (!tiene('tarjetas') && n(aj.cierreTarjeta)) {
+    r.tarjetas = [{ id: 't1', nombre: 'Crédito', cierre: n(aj.cierreTarjeta), vence: n(aj.vencimientoTarjeta),
+      deudaInicial: n(aj.deudaInicialTarjeta), consumosIniciales: n(aj.consumosInicialesTarjeta), fecha: String(aj.fechaTarjeta || aj.fechaInicialARS || '') }];
+  }
+  return r;
+}
+
+function normSimple(s) {
+  return String(s === null || s === undefined ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** ¿A qué tarjeta corresponde este medio de pago? Devuelve la tarjeta o null si no es crédito. */
+function tarjetaDeMedio(medio, tarjetas) {
+  var m = normSimple(medio);
+  if (!m) return null;
+  for (var i = 0; i < tarjetas.length; i++) if (normSimple(tarjetas[i].nombre) === m) return tarjetas[i];
+  if (/credito/.test(m)) return tarjetas[0] || { id: '_', nombre: 'Crédito', cierre: 0 };
+  return null;
+}
+
+/** Gasto en pesos con tarjeta de crédito: va a la tarjeta y se descuenta de tu plata recién cuando pagás el resumen. */
+function vaATarjetaCon(m, tarjetas) { return m.tipo === 'gasto' && m.moneda !== 'USD' && !!tarjetaDeMedio(m.medio, tarjetas); }
+
+/** Todas las tarjetas a mostrar: las configuradas, o una genérica si usás "Crédito" sin haber configurado ninguna. */
+function tarjetasActivas(movs, aj) {
+  if (aj.tarjetas.length) return aj.tarjetas;
+  var usa = movs.some(function (m) { return (m.tipo === 'pagoTarjeta' || vaATarjetaCon(m, [])); });
+  return usa ? [{ id: '_', nombre: 'Crédito', cierre: 0 }] : [];
+}
 
 /**
- * Estado de la tarjeta de crédito por resúmenes. Cada resumen ("ciclo") se identifica por el mes en que cierra (aaaa-mm).
- * Una compra va al resumen que cierra en la primera fecha de cierre igual o posterior a la compra; la cuota k va k-1 resúmenes después.
- * Los pagos se aplican primero a los resúmenes más viejos. Devuelve null si no configuraste el día de cierre.
+ * Estado de UNA tarjeta. Con día de cierre: por resúmenes (cada compra va al resumen que cierra primero; cada cuota, un resumen después).
+ * Sin día de cierre: estimado simple. Los pagos se aplican primero a lo más viejo.
  */
-function calcularTarjeta(movs, aj, hoy) {
+function calcularTarjeta(movs, card, hoy, tarjetas) {
   var pad = function (n) { return ('0' + n).slice(-2); };
   var mover = function (mes, n) { var t = +mes.slice(0, 4) * 12 + (+mes.slice(5, 7) - 1) + n; return Math.floor(t / 12) + '-' + pad(t % 12 + 1); };
   var dias = function (mes) { return new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5, 7), 0)).getUTCDate(); };
-  var C = Math.min(31, Math.max(0, Math.round(Number(aj.cierreTarjeta) || 0)));
-  if (!C) return null;
-  var V = Math.min(31, Math.max(1, Math.round(Number(aj.vencimientoTarjeta) || 0) || Math.min(31, C + 10)));
+  var lista = tarjetas && tarjetas.length ? tarjetas : [card];
+  var esDeEsta = function (m) { var t = tarjetaDeMedio(m.medio, lista); return !!t && (t.id === card.id || normSimple(t.nombre) === normSimple(card.nombre)); };
+  var desde = card.fecha || '';
+  var ms = movs.filter(function (m) { return m.fecha >= desde; });
+  var compras = ms.filter(function (m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && esDeEsta(m); });
+  var pagos = ms.filter(function (m) { return m.tipo === 'pagoTarjeta' && esDeEsta(m); })
+    .sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
+  var dIni = Number(card.deudaInicial) || 0, cIni = Number(card.consumosIniciales) || 0;
+  var totalPagos = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
+  var base = { card: card, nombre: card.nombre, ultimoPago: pagos[pagos.length - 1] || null };
+  var C = Math.min(31, Math.max(0, Math.round(Number(card.cierre) || 0)));
+
+  if (!C) {
+    // Sin cierre: próximo pago = lo comprado desde el último pago + cuotas que siguen
+    var deuda0 = dIni + cIni + compras.reduce(function (a, m) { return a + m.monto; }, 0) - totalPagos;
+    var prox = pagos.length ? 0 : dIni + cIni, nuevos = [], viejas = [];
+    compras.forEach(function (m) {
+      var n = Math.max(1, Number(m.cuotas) || 1);
+      var pagadas = pagos.filter(function (p) { return p.fecha > m.fecha; }).length;
+      if (pagadas < n) {
+        prox += m.monto / n;
+        (pagadas === 0 ? nuevos : viejas).push({ id: m.id, descripcion: m.descripcion || m.categoria, fecha: m.fecha, monto: m.monto, n: n, cuotaNro: pagadas + 1 });
+      }
+    });
+    base.conCiclos = false; base.deuda = Math.max(0, deuda0); base.proximo = Math.max(0, Math.min(prox, deuda0));
+    base.nuevos = nuevos; base.cuotasViejas = viejas; base.deudaIni = dIni + cIni;
+    return base;
+  }
+
+  var V = Math.min(31, Math.max(1, Math.round(Number(card.vence) || 0) || Math.min(31, C + 10)));
   var cierre = function (ciclo) { return ciclo + '-' + pad(Math.min(C, dias(ciclo))); };
   var vence = function (ciclo) { var mv = V > C ? ciclo : mover(ciclo, 1); return mv + '-' + pad(Math.min(V, dias(mv))); };
   var cicloDe = function (f) { var mes = f.slice(0, 7); return f <= cierre(mes) ? mes : mover(mes, 1); };
-  var esCred = function (m) { return m.tipo === 'gasto' && m.moneda !== 'USD' && /cr[eé]dito/i.test(String(m.medio || '')); };
-  var desde = aj.fechaTarjeta || aj.fechaInicialARS || '';
-  var ms = movs.filter(function (m) { return m.fecha >= desde; });
-  var pagos = ms.filter(function (m) { return m.tipo === 'pagoTarjeta'; }).sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
   var ciclos = {};
   var add = function (ciclo, monto, item) {
     if (!ciclos[ciclo]) ciclos[ciclo] = { ciclo: ciclo, monto: 0, items: [] };
-    ciclos[ciclo].monto += monto;
-    ciclos[ciclo].items.push(item);
+    ciclos[ciclo].monto += monto; ciclos[ciclo].items.push(item);
   };
   var cicloIni = cicloDe(desde || hoy);
-  var dIni = Number(aj.deudaInicialTarjeta) || 0, cIni = Number(aj.consumosInicialesTarjeta) || 0;
   if (dIni) add(mover(cicloIni, -1), dIni, { descripcion: 'Resumen que ya había cerrado', fecha: desde, monto: dIni, n: 1, cuotaNro: 1, inicial: true });
   if (cIni) add(cicloIni, cIni, { descripcion: 'Consumos que ya tenías', fecha: desde, monto: cIni, n: 1, cuotaNro: 1, inicial: true });
-  ms.filter(esCred).forEach(function (m) {
+  compras.forEach(function (m) {
     var n = Math.max(1, Number(m.cuotas) || 1), c0 = cicloDe(m.fecha);
     for (var k = 0; k < n; k++) add(mover(c0, k), m.monto / n, { id: m.id, descripcion: m.descripcion || m.categoria, fecha: m.fecha, monto: m.monto, n: n, cuotaNro: k + 1 });
   });
-  var resto = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
-  var lista = Object.keys(ciclos).sort().map(function (k) {
+  var resto = totalPagos;
+  var todos = Object.keys(ciclos).sort().map(function (k) {
     var c = ciclos[k];
     c.pagado = Math.min(resto, c.monto); resto -= c.pagado;
     c.pendiente = c.monto - c.pagado; c.cierra = cierre(c.ciclo); c.vence = vence(c.ciclo);
@@ -318,72 +433,71 @@ function calcularTarjeta(movs, aj, hoy) {
   });
   var abierto = cicloDe(hoy);
   var actual = ciclos[abierto] || { ciclo: abierto, monto: 0, items: [], pagado: 0, pendiente: 0, cierra: cierre(abierto), vence: vence(abierto) };
-  var cerrados = lista.filter(function (c) { return c.ciclo < abierto && c.pendiente > 0.5; });
-  var futuros = lista.filter(function (c) { return c.ciclo > abierto && c.pendiente > 0.5; });
+  var cerrados = todos.filter(function (c) { return c.ciclo < abierto && c.pendiente > 0.5; });
+  var futuros = todos.filter(function (c) { return c.ciclo > abierto && c.pendiente > 0.5; });
   var sumaP = function (l) { return l.reduce(function (a, c) { return a + c.pendiente; }, 0); };
   var aPagar = sumaP(cerrados);
-  return {
-    conCiclos: true, cerrados: cerrados, aPagar: aPagar,
-    venceCerrado: cerrados.length ? cerrados[cerrados.length - 1].vence : "",
-    vencido: cerrados.some(function (c) { return c.vence < hoy; }),
-    actual: actual, futuros: futuros, enCuotasFuturas: sumaP(futuros),
-    deuda: aPagar + actual.pendiente + sumaP(futuros),
-    proximo: aPagar > 0.5 ? aPagar : actual.pendiente,
-    ultimoPago: pagos[pagos.length - 1] || null,
-    fechaCierre: cierre, fechaVence: vence, cicloDe: cicloDe
-  };
+  base.conCiclos = true; base.cerrados = cerrados; base.aPagar = aPagar;
+  base.venceCerrado = cerrados.length ? cerrados[cerrados.length - 1].vence : '';
+  base.vencido = cerrados.some(function (c) { return c.vence < hoy; });
+  base.actual = actual; base.futuros = futuros; base.enCuotasFuturas = sumaP(futuros);
+  base.deuda = aPagar + actual.pendiente + sumaP(futuros);
+  base.proximo = aPagar > 0.5 ? aPagar : actual.pendiente;
+  base.fechaCierre = cierre; base.fechaVence = vence; base.cicloDe = cicloDe;
+  return base;
 }
 
-/** Lo que debés en total en la tarjeta (con todas las cuotas que faltan). */
-function deudaTarjeta_(movs, ajustes) {
-  ajustes = ajustes || leerAjustes_();
-  const est = calcularTarjeta(movs, ajustes, hoy_());
-  if (est) return est.deuda;
-  const desde = ajustes.fechaTarjeta || ajustes.fechaInicialARS || '';
-  return movs.reduce(function (a, m) {
-    if (m.fecha < desde) return a;
-    if (vaATarjeta_(m)) return a + m.monto;
-    if (m.tipo === 'pagoTarjeta') return a - m.monto;
-    return a;
-  }, (ajustes.deudaInicialTarjeta || 0) + (ajustes.consumosInicialesTarjeta || 0));
-}
-
-function fechaCorta_(f) { return Number(f.slice(8, 10)) + '/' + Number(f.slice(5, 7)); }
-
-/** Frase para Siri sobre la tarjeta. */
-function textoTarjeta_(movs, aj) {
-  const est = calcularTarjeta(movs, aj, hoy_());
-  if (!est) {
-    const d = deudaTarjeta_(movs, aj);
-    return d > 0.5 ? 'En la tarjeta de crédito debés ' + fmtMonto_(d, 'ARS') + ', contando cuotas futuras. ' : '';
-  }
-  let s = '';
-  if (est.aPagar > 0.5) s += 'De la tarjeta tenés que pagar ' + fmtMonto_(est.aPagar, 'ARS') + (est.vencido ? ', que ya venció el ' : ', que vence el ') + fechaCorta_(est.venceCerrado) + '. ';
-  if (est.actual.pendiente > 0.5) s += 'En el resumen en curso llevás ' + fmtMonto_(est.actual.pendiente, 'ARS') + ', cierra el ' + fechaCorta_(est.actual.cierra) + '. ';
-  if (!s) s = 'No debés nada en la tarjeta. ';
+/**
+ * Saldos al cierre de un mes (hasta = 'aaaa-mm', o vacío = todo):
+ *  ars: cuenta en pesos (null si no cargaste el saldo inicial) · usd: cuenta en dólares
+ *  ahorroUSD / ahorroARS: ahorros. Si no tenés cuenta en dólares, lo que gastás/cobrás en dólares sale/entra de tus ahorros en dólares.
+ */
+function calcularSaldos(movs, aj, hasta) {
+  var tarjetas = aj.tarjetas || [];
+  var s = { ars: aj.fechaInicialARS ? aj.saldoInicialARS : null, usd: aj.saldoInicialCuentaUSD, ahorroUSD: aj.saldoInicialAhorroUSD, ahorroARS: aj.saldoInicialAhorroARS };
+  movs.forEach(function (m) {
+    if (hasta && m.mes > hasta) return;
+    var enArs = s.ars !== null && m.fecha >= aj.fechaInicialARS;
+    var dePesos = function (v) { if (enArs) s.ars += v; };
+    var deUSD = function (v) { if (aj.cuentaUSD) s.usd += v; else s.ahorroUSD += v; };
+    var cuentaUSD = m.cuenta === 'USD';
+    if (m.tipo === 'ahorro' || m.tipo === 'retiro') {
+      var sg = m.tipo === 'ahorro' ? 1 : -1;
+      if (m.moneda === 'ARS') { s.ahorroARS += sg * m.monto; dePesos(-sg * m.monto); return; }
+      s.ahorroUSD += sg * m.monto;
+      if (cuentaUSD) { if (aj.cuentaUSD) s.usd -= sg * m.monto; }
+      else dePesos(-sg * (m.pesos || 0));
+      return;
+    }
+    if (m.tipo === 'pagoTarjeta') { dePesos(-m.monto); return; }
+    var signo = m.tipo === 'ingreso' ? 1 : -1;
+    if (m.moneda === 'USD') { deUSD(signo * m.monto); return; }
+    if (vaATarjetaCon(m, tarjetas)) return; // se descuenta cuando pagás el resumen
+    dePesos(signo * m.monto);
+  });
   return s;
 }
+/* ==== FIN NÚCLEO ==== */
 
-/** Plata disponible en pesos: saldo inicial + ingresos y ventas de USD − gastos y compras de USD (desde la fecha inicial). */
-function saldoARS_(movs, ajustes) {
-  ajustes = ajustes || leerAjustes_();
-  if (!ajustes.fechaInicialARS) return null;
-  return movs.reduce(function (a, m) {
-    if (m.fecha < ajustes.fechaInicialARS) return a;
-    if (m.tipo === 'ahorro') return a - (m.pesos || 0);
-    if (m.tipo === 'retiro') return a + (m.pesos || 0);
-    if (m.tipo === 'pagoTarjeta') return a - m.monto;
-    if (m.moneda === 'USD' || vaATarjeta_(m)) return a; // lo de la tarjeta se descuenta cuando pagás el resumen
-    return a + (m.tipo === 'ingreso' ? m.monto : -m.monto);
-  }, ajustes.saldoInicialARS);
-}
+/* ---------- Envoltorios para la planilla ---------- */
+function vaATarjeta_(m) { return vaATarjetaCon(m, aj_().tarjetas); }
+function saldos_(movs) { return calcularSaldos(movs, aj_()); }
+function fechaCorta_(f) { return Number(f.slice(8, 10)) + '/' + Number(f.slice(5, 7)); }
 
-/** Saldo de la cuenta en dólares: ahorro inicial + ingresos y compras − gastos y ventas. */
-function saldoUSD_(movs, ajustes) {
-  return movs.reduce(function (a, m) {
-    if (m.moneda !== 'USD') return a;
-    return a + ((m.tipo === 'ingreso' || m.tipo === 'ahorro') ? m.monto : -m.monto);
-  }, (ajustes || leerAjustes_()).saldoInicialUSD);
+/** Frase para Siri sobre la(s) tarjeta(s). */
+function textoTarjeta_(movs) {
+  const aj = aj_();
+  const lista = tarjetasActivas(movs, aj);
+  let s = '';
+  lista.forEach(function (card) {
+    const est = calcularTarjeta(movs, card, hoy_(), aj.tarjetas);
+    const nom = lista.length > 1 ? 'la ' + card.nombre : 'la tarjeta';
+    if (!est.conCiclos) { if (est.deuda > 0.5) s += 'En ' + nom + ' debés ' + fmtMonto_(est.deuda, 'ARS') + '. '; return; }
+    if (est.aPagar > 0.5) s += 'De ' + nom + ' tenés que pagar ' + fmtMonto_(est.aPagar, 'ARS') + (est.vencido ? ', que ya venció el ' : ', que vence el ') + fechaCorta_(est.venceCerrado) + '. ';
+    if (est.actual.pendiente > 0.5) s += 'En el resumen en curso de ' + nom + ' llevás ' + fmtMonto_(est.actual.pendiente, 'ARS') + ', cierra el ' + fechaCorta_(est.actual.cierra) + '. ';
+  });
+  if (!s && lista.length) s = 'No debés nada en la tarjeta. ';
+  return s;
 }
 
 function hoja_(clave) {
@@ -411,8 +525,10 @@ function leer_(clave) {
     if (clave === 'MOV') {
       if (!o.mes && o.fecha) o.mes = o.fecha.slice(0, 7);
       o.tipo = TIPOS.indexOf(o.tipo) >= 0 ? o.tipo : 'gasto';
-      o.moneda = (o.moneda === 'USD' || o.tipo === 'ahorro' || o.tipo === 'retiro') ? 'USD' : 'ARS';
+      const cambio = o.tipo === 'ahorro' || o.tipo === 'retiro';
+      o.moneda = cambio ? (o.moneda === 'ARS' ? 'ARS' : 'USD') : (o.moneda === 'USD' ? 'USD' : 'ARS');
       o.pesos = Number(o.pesos) || 0;
+      o.cuenta = String(o.cuenta).toUpperCase() === 'USD' ? 'USD' : 'ARS';
     }
     if (clave === 'FIJ') o.moneda = String(o.moneda).toUpperCase() === 'USD' ? 'USD' : 'ARS';
     if (clave === 'CAT') o.tipo = norm_(o.tipo) === 'ingreso' ? 'ingreso' : 'gasto';
@@ -463,11 +579,15 @@ function normalizarMov_(m) {
   let fecha = String(m.fecha || '').slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) fecha = hoy_();
   const tipo = TIPOS.indexOf(m.tipo) >= 0 ? m.tipo : 'gasto';
-  const cambio = tipo === 'ahorro' || tipo === 'retiro'; // compra / venta de dólares
+  const cambio = tipo === 'ahorro' || tipo === 'retiro'; // poner o sacar plata de tus ahorros
   const pagoT = tipo === 'pagoTarjeta';                   // pago del resumen de la tarjeta
-  const moneda = pagoT ? 'ARS' : (cambio || m.moneda === 'USD') ? 'USD' : 'ARS';
-  const catDefecto = { gasto: 'Otros', ingreso: 'Otros ingresos', ahorro: 'Ahorro', retiro: 'Venta de dólares', pagoTarjeta: 'Pago de tarjeta' }[tipo];
-  let medio = String(m.medio || (pagoT ? 'Crédito' : 'Sin especificar'));
+  const moneda = pagoT ? 'ARS' : cambio ? (m.moneda === 'ARS' ? 'ARS' : 'USD') : (m.moneda === 'USD' ? 'USD' : 'ARS');
+  const cuenta = cambio && moneda === 'USD' && String(m.cuenta).toUpperCase() === 'USD' ? 'USD' : 'ARS';
+  const descCambio = tipo === 'ahorro'
+    ? (moneda === 'ARS' ? 'Ahorro en pesos' : cuenta === 'USD' ? 'De la cuenta en dólares a ahorros' : 'Compra de dólares')
+    : (moneda === 'ARS' ? 'Saqué de ahorros' : cuenta === 'USD' ? 'De ahorros a la cuenta en dólares' : 'Venta de dólares');
+  const catDefecto = { gasto: 'Otros', ingreso: 'Otros ingresos', ahorro: 'Ahorro', retiro: moneda === 'USD' && cuenta === 'ARS' ? 'Venta de dólares' : 'Retiro de ahorros', pagoTarjeta: 'Pago de tarjeta' }[tipo];
+  let medio = String(m.medio || (pagoT ? ((aj_().tarjetas[0] || {}).nombre || 'Crédito') : 'Sin especificar'));
   if (moneda === 'USD' && !cambio && medio === 'Sin especificar') medio = 'Cuenta en dólares';
   return {
     id: m.id || '',
@@ -476,14 +596,15 @@ function normalizarMov_(m) {
     tipo: tipo,
     monto: Math.abs(Number(m.monto)) || 0,
     moneda: moneda,
-    descripcion: String(m.descripcion || (tipo === 'ahorro' ? 'Compra de dólares' : tipo === 'retiro' ? 'Venta de dólares' : pagoT ? 'Pago de tarjeta' : '')).slice(0, 200),
+    descripcion: String(m.descripcion || (cambio ? descCambio : pagoT ? 'Pago de tarjeta' : '')).slice(0, 200),
     categoria: (cambio || pagoT) ? catDefecto : String(m.categoria || catDefecto),
     medio: medio,
     cuotas: !cambio && !pagoT && Number(m.cuotas) > 1 ? Number(m.cuotas) : '',
     idFijo: (cambio || pagoT) ? '' : (m.idFijo || ''),
     origen: m.origen || '',
     creado: m.creado || '',
-    pesos: cambio ? (Math.abs(Number(m.pesos)) || 0) : ''
+    pesos: cambio ? (moneda === 'ARS' ? Math.abs(Number(m.monto)) || 0 : cuenta === 'USD' ? 0 : (Math.abs(Number(m.pesos)) || 0)) : '',
+    cuenta: cambio ? cuenta : ''
   };
 }
 
@@ -608,7 +729,7 @@ function procesarDebitosAutomaticos() {
 
 /** tipoForzado: 'ingreso' cuando viene del atajo "Anotar ingreso" (si no, se adivina por la frase). */
 function procesarTexto_(texto, origen, tipoForzado) {
-  const ctx = { categorias: leer_('CAT'), medios: leer_('MED'), fijos: leer_('FIJ'), hoy: hoy_(), tipoForzado: tipoForzado === 'ingreso' ? 'ingreso' : '' };
+  const ctx = { categorias: leer_('CAT'), medios: leer_('MED'), fijos: leer_('FIJ'), hoy: hoy_(), tipoForzado: tipoForzado === 'ingreso' ? 'ingreso' : '', aj: aj_() };
   const r = interpretar_(texto, ctx);
 
   if (r.error) return { ok: false, error: r.error, mensaje: r.error };
@@ -635,29 +756,39 @@ function procesarTexto_(texto, origen, tipoForzado) {
 
   const mov = agregarMov_({
     fecha: r.fecha, tipo: r.tipo, monto: r.monto, moneda: r.moneda, descripcion: r.descripcion,
-    categoria: r.categoria, medio: r.medio, cuotas: r.cuotas, pesos: r.pesos
+    categoria: r.categoria, medio: r.medio, cuotas: r.cuotas, pesos: r.pesos, cuenta: r.cuenta
   }, origen);
   let mensaje = mensajeAnotado_(mov, ctx.hoy);
+  const aj = aj_();
   if (mov.tipo === 'pagoTarjeta') {
-    const queda = deudaTarjeta_(leer_('MOV'));
+    const card = tarjetaDeMedio(mov.medio, aj.tarjetas) || tarjetasActivas([mov], aj)[0];
+    const queda = card ? calcularTarjeta(leer_('MOV'), card, hoy_(), aj.tarjetas).deuda : 0;
     mensaje += queda > 0.5 ? ' En la tarjeta te quedan ' + fmtMonto_(queda, 'ARS') + ' por pagar, contando cuotas futuras.' : ' Ya no debés nada en la tarjeta.';
   } else if (vaATarjeta_(mov)) {
-    const est = calcularTarjeta([mov], leerAjustes_(), hoy_());
-    mensaje += est ? ' Va al resumen que cierra el ' + fechaCorta_(est.fechaCierre(est.cicloDe(mov.fecha))) + ' y vence el ' + fechaCorta_(est.fechaVence(est.cicloDe(mov.fecha))) + '. Se descuenta de tu plata cuando lo pagues.'
-      : ' Va a la tarjeta: se descuenta de tu plata cuando pagues el resumen.';
+    const card = tarjetaDeMedio(mov.medio, aj.tarjetas);
+    const est = card && card.cierre ? calcularTarjeta([mov], card, hoy_(), aj.tarjetas) : null;
+    const nom = aj.tarjetas.length > 1 ? 'la ' + card.nombre : 'la tarjeta';
+    mensaje += est ? ' Va al resumen de ' + nom + ' que cierra el ' + fechaCorta_(est.fechaCierre(est.cicloDe(mov.fecha))) + ' y vence el ' + fechaCorta_(est.fechaVence(est.cicloDe(mov.fecha))) + '. Se descuenta de tu plata cuando lo pagues.'
+      : ' Va a ' + nom + ': se descuenta de tu plata cuando pagues el resumen.';
   }
   if (r.fijoParecido) {
     const mes = r.fecha.slice(0, 7);
     const pagado = leer_('MOV').some(function (m) { return m.idFijo === r.fijoParecido.id && m.mes === mes; });
     if (!pagado) mensaje += ' Lo anoté como gasto variable. Si era tu fijo ' + r.fijoParecido.nombre + ', borralo en la app y decilo de nuevo agregando la palabra fijo.';
   }
-  if (mov.moneda === 'USD') mensaje += ' Tu cuenta en dólares tiene ' + fmtMonto_(saldoUSD_(leer_('MOV')), 'USD') + '.';
+  const sal = saldos_(leer_('MOV'));
+  if (mov.tipo === 'ahorro' || mov.tipo === 'retiro') mensaje += ' Tus ahorros en ' + (mov.moneda === 'USD' ? 'dólares son ' + fmtMonto_(sal.ahorroUSD, 'USD') : 'pesos son ' + fmtMonto_(sal.ahorroARS, 'ARS')) + '.';
+  else if (mov.moneda === 'USD') mensaje += aj.cuentaUSD ? ' Tu cuenta en dólares tiene ' + fmtMonto_(sal.usd, 'USD') + '.' : ' Salió de tus ahorros en dólares: te quedan ' + fmtMonto_(sal.ahorroUSD, 'USD') + '.';
   return { ok: true, mensaje: mensaje, movimiento: mov };
 }
 
 function mensajeAnotado_(m, hoy) {
   const delDia = m.fecha !== hoy ? ', del ' + Number(m.fecha.slice(8, 10)) + '/' + Number(m.fecha.slice(5, 7)) : '';
   if (m.tipo === 'pagoTarjeta') return 'Anotado: pagaste ' + fmtMonto_(m.monto, 'ARS') + ' de la tarjeta' + (norm_(m.medio) !== 'credito' ? ' ' + m.medio : '') + delDia + '. Ya se descontó de tu plata.';
+  if ((m.tipo === 'ahorro' || m.tipo === 'retiro') && (m.moneda === 'ARS' || m.cuenta === 'USD')) {
+    return 'Anotado: ' + (m.tipo === 'ahorro' ? 'pasaste ' : 'sacaste ') + fmtMonto_(m.monto, m.moneda) + (m.tipo === 'ahorro' ? ' a tus ahorros' : ' de tus ahorros') +
+      (m.cuenta === 'USD' ? (m.tipo === 'ahorro' ? ' desde la cuenta en dólares' : ' a la cuenta en dólares') : '') + delDia + '.';
+  }
   if (m.tipo === 'ahorro' || m.tipo === 'retiro') {
     let c = (m.tipo === 'ahorro' ? 'Anotado: ahorraste ' : 'Anotado: vendiste ') + fmtMonto_(m.monto, 'USD');
     if (m.pesos) c += (m.tipo === 'ahorro' ? ' por ' : ' y recibiste ') + fmtMonto_(m.pesos, 'ARS') + ' (a ' + fmtMonto_(m.pesos / m.monto, 'ARS') + ' cada dólar)';
@@ -671,24 +802,28 @@ function mensajeAnotado_(m, hoy) {
 }
 
 function resumenParaSiri_(ctx) {
+  const aj = aj_();
   const mes = ctx.hoy.slice(0, 7);
-  const movs = leer_('MOV').filter(function (m) { return m.mes === mes; });
+  const todos = leer_('MOV');
+  const movs = todos.filter(function (m) { return m.mes === mes; });
   const suma = function (tipo, moneda) {
     return movs.filter(function (m) { return m.tipo === tipo && m.moneda === (moneda || 'ARS'); })
       .reduce(function (a, m) { return a + m.monto; }, 0);
   };
-  const ahorroUSD = suma('ahorro', 'USD') - suma('retiro', 'USD');
-  const gastoUSD = suma('gasto', 'USD');
-  const saldo = saldoUSD_(leer_('MOV'));
+  const sal = saldos_(todos);
   const pendientes = ctx.fijos.filter(function (f) {
     return f.activo && !movs.some(function (m) { return m.idFijo === f.id; });
   });
   let s = 'En lo que va del mes gastaste ' + fmtMonto_(suma('gasto'), 'ARS') + ' e ingresaste ' + fmtMonto_(suma('ingreso'), 'ARS') + '. ';
-  const disponible = saldoARS_(leer_('MOV'));
-  if (disponible !== null) s += 'Tenés disponibles ' + (disponible < 0 ? 'menos ' : '') + fmtMonto_(disponible, 'ARS') + ' en pesos. ';
-  s += textoTarjeta_(leer_('MOV'), leerAjustes_());
-  s += 'En dólares: ' + (ahorroUSD ? 'este mes ahorraste ' + fmtMonto_(ahorroUSD, 'USD') + ', ' : '') +
-    (gastoUSD ? 'gastaste ' + fmtMonto_(gastoUSD, 'USD') + ', ' : '') + 'y tu cuenta tiene ' + fmtMonto_(saldo, 'USD') + '. ';
+  if (sal.ars !== null) s += 'Tenés disponibles ' + (sal.ars < 0 ? 'menos ' : '') + fmtMonto_(sal.ars, 'ARS') + ' en pesos. ';
+  s += textoTarjeta_(todos);
+  if (aj.cuentaUSD) s += 'Tu cuenta en dólares tiene ' + fmtMonto_(sal.usd, 'USD') + '. ';
+  const ah = [];
+  if (aj.ahorroMonedas.indexOf('USD') >= 0 || sal.ahorroUSD) ah.push(fmtMonto_(sal.ahorroUSD, 'USD'));
+  if (aj.ahorroMonedas.indexOf('ARS') >= 0 || sal.ahorroARS) ah.push(fmtMonto_(sal.ahorroARS, 'ARS'));
+  s += 'En ahorros tenés ' + ah.join(' y ') + '. ';
+  const ahMes = (suma('ahorro', 'USD') - suma('retiro', 'USD'));
+  if (ahMes) s += 'Este mes ahorraste ' + fmtMonto_(ahMes, 'USD') + '. ';
   if (!ctx.fijos.some(function (f) { return f.activo; })) return s;
   s += pendientes.length
     ? 'Te falta pagar ' + pendientes.length + (pendientes.length === 1 ? ' fijo: ' : ' fijos: ') + pendientes.map(function (f) { return f.nombre; }).join(', ') + '.'
@@ -724,14 +859,18 @@ function interpretar_(texto, ctx) {
     return lista.length;
   };
 
+  const aj = ctx.aj || completarAjustes({});
+  const nombresTarjetas = aj.tarjetas.map(function (c) { return escRe_(norm_(c.nombre)); }).filter(Boolean);
+
   // ¿Pagaste la tarjeta? ("pagué la tarjeta 350 mil", "pagué el resumen de la visa 420.000")
-  if (ctx.tipoForzado !== 'ingreso' && /\b(pague|pagamos|abone|cancele)\s+(?:el\s+|la\s+|mi\s+)?(resumen|tarjeta|visa|master|mastercard|amex)\b/.test(t)) {
+  const reTarj = new RegExp('\\b(pague|pagamos|abone|cancele)\\s+(?:el\\s+|la\\s+|mi\\s+)?(resumen|tarjeta|visa|master|mastercard|amex' + (nombresTarjetas.length ? '|' + nombresTarjetas.join('|') : '') + ')\\b');
+  if (ctx.tipoForzado !== 'ingreso' && reTarj.test(t)) {
     const ms = buscarMontos_(t);
     if (!ms.length) return { error: 'Decime cuánto pagaste de la tarjeta. Por ejemplo: pagué la tarjeta 350 mil.' };
-    const tarjetas = (ctx.medios || []).filter(function (md) { return esCredito_(md.nombre); });
-    let tarjeta = tarjetas.filter(function (md) {
-      return clavesDe_(md).some(function (k) { return k !== 'credito' && k !== 'tarjeta de credito' && new RegExp('\\b' + escRe_(k) + '\\b').test(t); });
-    })[0] || tarjetas[0];
+    let tarjeta = aj.tarjetas.filter(function (c) {
+      const n = norm_(c.nombre);
+      return new RegExp('\\b' + escRe_(n) + '\\b').test(t) || n.split(' ').some(function (w) { return w.length >= 4 && w !== 'credito' && w !== 'tarjeta' && new RegExp('\\b' + escRe_(w) + '\\b').test(t); });
+    })[0] || aj.tarjetas[0];
     let fechaP = ctx.hoy;
     if (/\b(antes de ayer|anteayer)\b/.test(t)) fechaP = sumarDias_(ctx.hoy, -2);
     else if (/\bayer\b/.test(t)) fechaP = sumarDias_(ctx.hoy, -1);
@@ -747,13 +886,21 @@ function interpretar_(texto, ctx) {
   // ¿Compra o venta de dólares? ("compré 200 dólares a 1.250.000", "ahorré 300 dólares", "vendí 100 dólares a 1400")
   const DOL = '(?:dolares|dolar|usd|verdes|u\\$s|us\\$)';
   const NUM = '(?:u\\$s\\s*|us\\$\\s*|usd\\s*)?(?:(?:[\\d.,]+|' + Object.keys(VALOR_PALABRA).join('|') + '|mil|millon|millones|y|k)\\s*)*';
+  const AHO = '(?:a|al|a mis|a los|en)\\s+(?:ahorros?|chanchito|alcancia)';
+  const DEAHO = '(?:de|del|de mis|de los)\\s+(?:ahorros?|chanchito|alcancia)';
   const esAhorro = /\b(ahorre|ahorramos|guarde|ahorro de)\b/.test(t) ||
-    new RegExp('\\b(compre|compramos|compra de|cambie|pase a)\\s+(?:unos\\s+|los\\s+)?(?:' + NUM + ')?' + DOL).test(t);
-  const esRetiro = new RegExp('\\b(vendi|vendimos|venta de)\\s+(?:unos\\s+|los\\s+)?(?:' + NUM + ')?' + DOL).test(t);
+    new RegExp('\\b(compre|compramos|compra de|cambie|pase a)\\s+(?:unos\\s+|los\\s+)?(?:' + NUM + ')?' + DOL).test(t) ||
+    new RegExp('\\b(pase|puse|meti|mande|transferi)\\b.*\\b' + AHO + '\\b').test(t);
+  const esRetiro = new RegExp('\\b(vendi|vendimos|venta de)\\s+(?:unos\\s+|los\\s+)?(?:' + NUM + ')?' + DOL).test(t) ||
+    new RegExp('\\b(saque|retire|use|tome|pase)\\b.*\\b' + DEAHO + '\\b').test(t);
   if ((esAhorro || esRetiro) && ctx.tipoForzado !== 'ingreso') return interpretarCambio_(original, t, esRetiro ? 'retiro' : 'ahorro', ctx);
 
+  // Tus frases propias ("bondi" → Transporte, SUBE, $1.000…). Gana la más larga que aparezca en lo que dijiste.
+  const regla = (aj.frases || []).filter(function (f) { return f.frase && new RegExp('\\b' + escRe_(norm_(f.frase)) + '\\b').test(t); })
+    .sort(function (a, b) { return norm_(b.frase).length - norm_(a.frase).length; })[0] || null;
+
   // Tipo
-  const tipo = ctx.tipoForzado === 'ingreso' ? 'ingreso' : /\b(cobre|cobramos|cobro|me pagaron|me depositaron|me transfirieron|me entro|me entraron|ingrese|ingreso|ingresaron|recibi|vendi|sueldo|aguinaldo)\b/.test(t) ? 'ingreso' : 'gasto';
+  const tipo = ctx.tipoForzado === 'ingreso' ? 'ingreso' : regla && regla.tipo ? regla.tipo : /\b(cobre|cobramos|cobro|me pagaron|me depositaron|me transfirieron|me entro|me entraron|ingrese|ingreso|ingresaron|recibi|vendi|sueldo|aguinaldo)\b/.test(t) ? 'ingreso' : 'gasto';
 
   // Fecha
   let fecha = ctx.hoy;
@@ -772,6 +919,9 @@ function interpretar_(texto, ctx) {
       if (quitarPrimero(re)) { medio = md.nombre; break; }
     }
   }
+
+  if (medio === 'Sin especificar' && regla && regla.medio) medio = regla.medio;
+  if (regla) quitarPrimero(new RegExp('\\b' + escRe_(norm_(regla.frase)) + '\\b'));
 
   // Moneda
   let moneda = medio === 'Cuenta en dólares' ? 'USD' : 'ARS';
@@ -793,6 +943,7 @@ function interpretar_(texto, ctx) {
     marcar(mayor.i, mayor.f);
   }
   quitarTodos(/\$/);
+  if (!monto && regla && regla.monto) monto = Number(regla.monto) || 0;
 
   // Verbos y muletillas
   quitarTodos(/\b(un gasto de|gasto de|un ingreso de|ingreso de|gaste|gastamos|gastado|pague|pagamos|abone|compre|compramos|cobre|cobramos|me pagaron|me depositaron|me transfirieron|me devolvieron|me reintegraron|me entraron|me entro|recibi|ingrese|anotame|anota que|anota|anotar|registra|registrame|siri)\b/);
@@ -827,6 +978,8 @@ function interpretar_(texto, ctx) {
     }
   }
 
+  if (regla && regla.categoria) categoria = regla.categoria;
+
   // Descripción: lo que queda de la frase original
   let desc = original.split('').filter(function (c, i) { return !mascara[i]; }).join('').replace(/\s+/g, ' ').trim();
   let antes;
@@ -838,6 +991,7 @@ function interpretar_(texto, ctx) {
       .replace(/^[,.;:¡!¿?\s-]+|[,.;:¡!¿?\s-]+$/g, '')
       .trim();
   } while (desc !== antes);
+  if (regla) desc = regla.descripcion || (desc ? desc : regla.frase);
   if (!desc) desc = categoria;
   desc = desc.charAt(0).toUpperCase() + desc.slice(1);
 
@@ -857,25 +1011,53 @@ function interpretar_(texto, ctx) {
   };
 }
 
-/** Compra (ahorro) o venta (retiro) de dólares. Devuelve monto = dólares y pesos = pesos. */
+/**
+ * Poner (ahorro) o sacar (retiro) plata de tus ahorros.
+ *  - En dólares comprados con pesos: monto = dólares, pesos = lo que pagaste ("compré 200 dólares a 1450").
+ *  - En dólares desde/hacia la cuenta en dólares: "pasé 100 dólares de la cuenta en dólares a ahorros".
+ *  - En pesos: "ahorré 50 mil pesos", "saqué 30 mil de ahorros".
+ */
 function interpretarCambio_(original, t, tipo, ctx) {
+  const aj = ctx.aj || completarAjustes({});
   let fecha = ctx.hoy;
   if (/\b(antes de ayer|anteayer)\b/.test(t)) fecha = sumarDias_(ctx.hoy, -2);
   else if (/\bayer\b/.test(t)) fecha = sumarDias_(ctx.hoy, -1);
 
-  // Todos los montos de la frase, marcando cuál viene pegado a "dólares" y cuál a "pesos"
   const nums = buscarMontos_(t).map(function (n) {
     const despues = t.slice(n.f, n.f + 14);
     const antes = t.slice(Math.max(0, n.i - 6), n.i);
     return {
       v: n.v,
       dolar: /(u\$s|us\$|usd)\s*$/.test(antes) || /^\s*(de\s+)?(dolares|dolar|usd|verdes|u\$s)/.test(despues),
-      peso: /\$\s*$/.test(antes) && !/u\$s\s*$|us\$\s*$/.test(antes) || /^\s*(de\s+)?(pesos|mangos|ars)/.test(despues),
+      peso: /\$\s*$/.test(antes) && !/u\$s\s*$|us\$\s*$/.test(antes) || /^\s*(de\s+)?(pesos|mangos|ars|lucas?|palos?)/.test(despues),
       tasa: /\b(a|al)\s*$/.test(antes) && !/^\s*(de\s+)?(pesos|mangos)/.test(despues)
     };
   });
-  let usd = nums.filter(function (n) { return n.dolar; })[0] || nums.filter(function (n) { return !n.peso; })[0];
-  if (!usd) return { error: 'No entendí cuántos dólares. Probá: compré 200 dólares a 1.250.000 pesos.' };
+  if (!nums.length) return { error: tipo === 'ahorro' ? 'No entendí cuánto ahorraste. Probá: compré 200 dólares a 1450, o ahorré 50 mil pesos.' : 'No entendí cuánto sacaste. Probá: saqué 100 dólares de ahorros.' };
+
+  const hablaDolares = nums.some(function (n) { return n.dolar; }) || /\b(dolares|dolar|usd|verdes)\b|u\$s|us\$/.test(t);
+  const hablaPesos = /\b(pesos|mangos|ars)\b/.test(t) || /\b\d+\s*(lucas?|palos?)\b/.test(t);
+  // ¿En qué moneda? Si no lo decís, la de tus ahorros (si ahorrás en las dos, dólares).
+  const mayorNum = nums.reduce(function (x, y) { return y.v > x.v ? y : x; }).v;
+  const pareceEnPesos = mayorNum >= 10000 || /\b(mil|lucas?|palos?|millon(es)?)\b/.test(t);
+  let moneda = hablaDolares ? 'USD' : hablaPesos ? 'ARS'
+    : aj.ahorroMonedas.length === 1 ? aj.ahorroMonedas[0]
+    : pareceEnPesos ? 'ARS' : 'USD';
+  if (moneda === 'USD' && hablaPesos && !nums.some(function (n) { return n.dolar; }) && !/\b(dolares|dolar|usd|verdes)\b/.test(t)) moneda = 'ARS';
+  const categoria = tipo === 'ahorro' ? 'Ahorro' : 'Retiro de ahorros';
+
+  if (moneda === 'ARS') {
+    const mayor = nums.reduce(function (x, y) { return y.v > x.v ? y : x; });
+    return { tipo: tipo, monto: mayor.v, pesos: mayor.v, moneda: 'ARS', cuenta: 'ARS', fecha: fecha, cuotas: '', medio: 'Sin especificar',
+      categoria: categoria, descripcion: tipo === 'ahorro' ? 'Ahorro en pesos' : 'Saqué de ahorros', fijo: null };
+  }
+
+  const usd = nums.filter(function (n) { return n.dolar; })[0] || nums.filter(function (n) { return !n.peso; })[0] || nums[0];
+  const desdeCuentaUSD = aj.cuentaUSD && /\b(cuenta|caja)( de ahorro)? (en |de )?dolares\b|\bmis dolares de la cuenta\b/.test(t);
+  if (desdeCuentaUSD) {
+    return { tipo: tipo, monto: usd.v, pesos: 0, moneda: 'USD', cuenta: 'USD', fecha: fecha, cuotas: '', medio: 'Cuenta en dólares',
+      categoria: categoria, descripcion: tipo === 'ahorro' ? 'De la cuenta en dólares a ahorros' : 'De ahorros a la cuenta en dólares', fijo: null };
+  }
   const otro = nums.filter(function (n) { return n !== usd; })[0];
   let pesos = 0;
   if (otro) {
@@ -888,10 +1070,11 @@ function interpretarCambio_(original, t, tipo, ctx) {
     const claves = clavesDe_(ctx.medios[i]);
     if (claves.some(function (k) { return k !== 'sin especificar' && new RegExp('\\b' + escRe_(k) + '\\b').test(t); })) { medio = ctx.medios[i].nombre; break; }
   }
+  const vende = tipo === 'retiro';
   return {
-    tipo: tipo, monto: usd.v, pesos: pesos, moneda: 'USD', fecha: fecha, cuotas: '', medio: medio,
-    categoria: tipo === 'ahorro' ? 'Ahorro' : 'Venta de dólares',
-    descripcion: tipo === 'ahorro' ? 'Compra de dólares' : 'Venta de dólares', fijo: null
+    tipo: tipo, monto: usd.v, pesos: pesos, moneda: 'USD', cuenta: 'ARS', fecha: fecha, cuotas: '', medio: medio,
+    categoria: vende ? 'Venta de dólares' : 'Ahorro',
+    descripcion: vende ? 'Venta de dólares' : 'Compra de dólares', fijo: null
   };
 }
 
